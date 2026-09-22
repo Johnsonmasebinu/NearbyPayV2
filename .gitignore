@@ -42,4 +42,7 @@ yarn-error.*
 
 # local env files
 .env
+
+# screens guide
 .zcodeignore
+SCREENS_GUIDE.md
