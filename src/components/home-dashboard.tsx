@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.16)',
   },
   balanceArt: { position: 'absolute', top: -14, right: -8, width: 104, height: 104, opacity: 0.95 },
-  balanceTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  balanceTopRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   balanceLabel: { fontFamily: 'Montserrat_500Medium', fontSize: 13, color: 'rgba(255, 255, 255, 0.78)' },
   eyeToggle: { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255, 255, 255, 0.14)', alignItems: 'center', justifyContent: 'center' },
   balanceAmount: { fontFamily: 'Montserrat_700Bold', fontSize: 33, color: '#FFFFFF', letterSpacing: -1, marginTop: 8 },
