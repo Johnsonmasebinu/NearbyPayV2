@@ -1,9 +1,10 @@
-import { Cancel01Icon, CheckmarkBadge01Icon, Tick02Icon } from '@hugeicons/core-free-icons';
+import { Cancel01Icon, Tick02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useState } from 'react';
 import {
   Image,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -70,7 +71,7 @@ export function AvatarPickerSheet({
             <View style={styles.headerTitles}>
               <Text style={[styles.title, { color: t.textPrimary }]}>Choose Avatar</Text>
               <Text style={[styles.subtitle, { color: t.textSecondary }]}>
-                Pick a memo avatar to use across NearbyPay
+                Pick an avatar for your profile
               </Text>
             </View>
 
@@ -82,21 +83,14 @@ export function AvatarPickerSheet({
             </TouchableOpacity>
           </View>
 
-          {/* Current Selection Preview */}
-          <View style={[styles.previewCard, { backgroundColor: t.inputBg, borderColor: t.inputBorder }]}>
-            <View style={[styles.previewRing, { borderColor: t.brand }]}>
-              <Image source={{ uri: selected }} style={styles.previewImage} resizeMode="cover" />
-              <View style={[styles.previewBadge, { backgroundColor: t.brand }]}>
-                <HugeiconsIcon icon={CheckmarkBadge01Icon} size={13} color="#FFFFFF" />
-              </View>
+          {/* Centered Large Preview */}
+          <View style={styles.previewContainer}>
+            <View style={[styles.previewRing, { borderColor: t.brand, backgroundColor: t.brandTint }]}>
+              <Image source={{ uri: selected }} style={styles.previewImage} resizeMode="contain" />
             </View>
-
-            <View style={styles.previewInfo}>
-              <Text style={[styles.previewTitle, { color: t.textPrimary }]}>Selected Avatar</Text>
-              <Text style={[styles.previewSub, { color: t.muted }]}>
-                {selected.split('/').pop()?.replace('.png', '') || 'Custom'}
-              </Text>
-            </View>
+            <Text style={[styles.previewHint, { color: t.textSecondary }]}>
+              Tap any avatar below to preview
+            </Text>
           </View>
 
           {/* 25 Avatars Grid */}
@@ -105,7 +99,7 @@ export function AvatarPickerSheet({
             contentContainerStyle={styles.gridContent}
             showsVerticalScrollIndicator={false}>
             <View style={styles.grid}>
-              {AVAILABLE_AVATARS.map((url, index) => {
+              {AVAILABLE_AVATARS.map((url) => {
                 const isSelected = selected === url;
                 return (
                   <TouchableOpacity
@@ -114,22 +108,18 @@ export function AvatarPickerSheet({
                       styles.avatarSlot,
                       {
                         backgroundColor: isSelected ? t.brandTint : t.chipBg,
-                        borderColor: isSelected ? t.brand : t.cardBorder,
+                        borderColor: isSelected ? t.brand : 'transparent',
                       },
                     ]}
-                    activeOpacity={0.7}
+                    activeOpacity={0.75}
                     onPress={() => setSelected(url)}>
                     <Image source={{ uri: url }} style={styles.avatarImg} resizeMode="contain" />
 
                     {isSelected && (
-                      <View style={[styles.selectedCheck, { backgroundColor: t.brand }]}>
+                      <View style={[styles.selectedCheck, { backgroundColor: t.brand, borderColor: t.cardBg }]}>
                         <HugeiconsIcon icon={Tick02Icon} size={10} color="#FFFFFF" strokeWidth={3} />
                       </View>
                     )}
-
-                    <Text style={[styles.avatarIndex, { color: isSelected ? t.brand : t.muted }]}>
-                      #{index + 1}
-                    </Text>
                   </TouchableOpacity>
                 );
               })}
@@ -139,7 +129,7 @@ export function AvatarPickerSheet({
           {/* Action Buttons */}
           <View style={styles.actionRow}>
             <TouchableOpacity
-              style={[styles.cancelBtn, { backgroundColor: t.chipBg }]}
+              style={[styles.cancelBtn, { backgroundColor: t.chipBg, borderColor: t.cardBorder }]}
               activeOpacity={0.7}
               onPress={onClose}>
               <Text style={[styles.cancelBtnText, { color: t.textPrimary }]}>Cancel</Text>
@@ -147,7 +137,7 @@ export function AvatarPickerSheet({
 
             <TouchableOpacity
               style={[styles.saveBtn, { backgroundColor: t.brand }]}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
               onPress={handleConfirm}>
               <Text style={styles.saveBtnText}>Save Avatar</Text>
             </TouchableOpacity>
@@ -173,11 +163,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderBottomWidth: 0,
     paddingTop: 10,
-    paddingHorizontal: 16,
-    maxHeight: '82%',
+    paddingHorizontal: 20,
+    maxHeight: '84%',
   },
   handle: {
-    width: 44,
+    width: 40,
     height: 4,
     borderRadius: 2,
     alignSelf: 'center',
@@ -187,7 +177,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   headerTitles: {
     flex: 1,
@@ -209,32 +199,63 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  previewCard: {
-    flexDirection: 'row',
+  previewContainer: {
     alignItems: 'center',
-    gap: 12,
-    padding: 10,
-    borderRadius: 16,
-    borderWidth: 1,
-    marginBottom: 14,
+    paddingVertical: 10,
+    gap: 8,
   },
   previewRing: {
-    position: 'relative',
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    borderWidth: 2.5,
+    padding: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6 },
+      android: { elevation: 2 },
+      web: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6 },
+    }),
+  },
+  previewImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+  },
+  previewHint: {
+    fontFamily: 'Montserrat_500Medium',
+    fontSize: 11,
+  },
+  gridScroll: {
+    maxHeight: 270,
+  },
+  gridContent: {
+    paddingVertical: 6,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 12,
+  },
+  avatarSlot: {
+    width: '18%',
+    aspectRatio: 1,
+    borderRadius: 28,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
-  previewImage: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+  avatarImg: {
+    width: '84%',
+    height: '84%',
+    borderRadius: 24,
   },
-  previewBadge: {
+  selectedCheck: {
     position: 'absolute',
-    bottom: -2,
+    top: -2,
     right: -2,
     width: 18,
     height: 18,
@@ -242,64 +263,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  previewInfo: {
-    flex: 1,
-  },
-  previewTitle: {
-    fontFamily: 'Montserrat_600SemiBold',
-    fontSize: 13,
-  },
-  previewSub: {
-    fontFamily: 'Montserrat_500Medium',
-    fontSize: 11,
-    marginTop: 1,
-    textTransform: 'capitalize',
-  },
-  gridScroll: {
-    maxHeight: 280,
-  },
-  gridContent: {
-    paddingBottom: 8,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  avatarSlot: {
-    width: '18%',
-    aspectRatio: 0.85,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-    paddingVertical: 4,
-  },
-  avatarImg: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-  },
-  selectedCheck: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
-  },
-  avatarIndex: {
-    fontFamily: 'Montserrat_600SemiBold',
-    fontSize: 9,
-    marginTop: 2,
   },
   actionRow: {
     flexDirection: 'row',
@@ -312,6 +275,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
   },
   cancelBtnText: {
     fontFamily: 'Montserrat_600SemiBold',
