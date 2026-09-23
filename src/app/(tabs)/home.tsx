@@ -4,19 +4,15 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { HomeDashboard } from '@/components/home-dashboard';
-import { getAppTheme, HERO_STOPS } from '@/constants/app-theme';
-import { useAppTheme } from '@/hooks/theme-provider';
+import { HERO_STOPS } from '@/constants/app-theme';
 
 export default function HomeTab() {
   const router = useRouter();
-  const { isDark } = useAppTheme();
-  const t = getAppTheme(isDark);
 
   return (
-    // Hero-colored backdrop so the status-bar strip blends into the dark header
     <SafeAreaView style={[styles.safeArea, { backgroundColor: HERO_STOPS.from }]} edges={['top']}>
       <StatusBar style="light" />
-      <View style={[styles.container, { backgroundColor: t.pageBg }]}>
+      <View style={[styles.container, { backgroundColor: HERO_STOPS.from }]}>
         <HomeDashboard
           onNavigate={(tab) => {
             if (tab === 'more') {

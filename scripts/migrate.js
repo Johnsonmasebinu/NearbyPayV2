@@ -23,7 +23,47 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 
 CREATE INDEX IF NOT EXISTS idx_profiles_username ON public.profiles(username);
 
--- 2. Row Level Security
+-- 2. Transactions Table
+CREATE TABLE IF NOT EXISTS public.transactions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  title text NOT NULL,
+  category text NOT NULL DEFAULT 'Transfer',
+  amount numeric(14, 2) NOT NULL,
+  type text NOT NULL CHECK (type IN ('sent', 'received')),
+  status text NOT NULL DEFAULT 'Completed' CHECK (status IN ('Completed', 'Pending')),
+  reference text NOT NULL,
+  channel text NOT NULL DEFAULT 'NearbyPay Transfer',
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_transactions_user_created
+  ON public.transactions(user_id, created_at DESC);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_transactions_welcome_deposit
+  ON public.transactions(user_id, title)
+  WHERE title = 'Hackathon New Account Deposit';
+
+ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own transactions" ON public.transactions;
+CREATE POLICY "Users can view own transactions"
+  ON public.transactions FOR SELECT
+  USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can create own transactions" ON public.transactions;
+CREATE POLICY "Users can create own transactions"
+  ON public.transactions FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+DO $$
+BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.transactions;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 3. Row Level Security
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON public.profiles;
@@ -67,6 +107,19 @@ BEGIN
     avatar_url = EXCLUDED.avatar_url,
     updated_at = now();
 
+  INSERT INTO public.transactions (user_id, title, category, amount, type, status, reference, channel)
+  VALUES (
+    new.id,
+    'Hackathon New Account Deposit',
+    'Deposit',
+    10000,
+    'received',
+    'Completed',
+    'NPP-HACKATHON-DEPOSIT',
+    'NearbyPay New Account Deposit'
+  )
+  ON CONFLICT DO NOTHING;
+
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -76,7 +129,7 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- 4. Avatars Storage Bucket
+-- 5. Avatars Storage Bucket
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('avatars', 'avatars', true)
 ON CONFLICT (id) DO UPDATE SET public = true;

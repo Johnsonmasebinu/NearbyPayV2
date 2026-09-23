@@ -46,7 +46,7 @@ interface SignupScreenProps {
 
 export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps) {
   const { isDark } = useAppTheme();
-  const { signUp, generateUniqueUsername, resendVerificationEmail } = useAuth();
+  const { signUp, signIn, generateUniqueUsername, resendVerificationEmail } = useAuth();
   const { profile } = useUserProfile();
   const { show } = useToast();
 
@@ -184,6 +184,20 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
       }
     } catch (err: any) {
       show({ message: err.message || 'Signup failed. Please try again.', variant: 'error' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCheckConfirmed = async () => {
+    try {
+      setIsSubmitting(true);
+      await signIn(email.trim(), password);
+      show({ message: 'Account verified! Welcome to NearbyPay.', variant: 'success' });
+      onCreateAccount?.();
+    } catch {
+      show({ message: 'Email confirmed! Please sign in.', variant: 'info' });
+      onGoToLogin();
     } finally {
       setIsSubmitting(false);
     }
@@ -331,6 +345,14 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                       onPress={handleOpenEmailApp}
                       activeOpacity={0.88}>
                       <Text style={styles.primaryButtonText}>Open Email App</Text>
+                    </TouchableOpacity>
+
+                    {/* Instant continue button */}
+                    <TouchableOpacity
+                      style={[styles.primaryButton, { backgroundColor: '#10B981', marginTop: 10 }]}
+                      onPress={handleCheckConfirmed}
+                      activeOpacity={0.88}>
+                      <Text style={styles.primaryButtonText}>Continue to My Account</Text>
                     </TouchableOpacity>
 
                     {/* Secondary action: Proceed to Sign In */}

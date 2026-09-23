@@ -18,27 +18,40 @@ import { getAppTheme } from '@/constants/app-theme';
 import { useAuth } from '@/hooks/auth-provider';
 import { useAppTheme } from '@/hooks/theme-provider';
 
-export type PinSheetMode = 'setup' | 'change' | 'reset';
+export type PinSheetMode = 'setup' | 'change' | 'reset' | 'authorize';
 
 interface PinSheetProps {
   visible: boolean;
   mode: PinSheetMode;
   onClose: () => void;
   onSuccess: () => void;
+  onAuthorize?: (pin: string) => Promise<void>;
   canCancel?: boolean;
+  amount?: string;
+  recipientName?: string;
 }
 
-export function PinSheet({ visible, mode, onClose, onSuccess, canCancel = true }: PinSheetProps) {
+export function PinSheet({
+  visible,
+  mode,
+  onClose,
+  onSuccess,
+  onAuthorize,
+  canCancel = true,
+  amount,
+  recipientName,
+}: PinSheetProps) {
   const { isDark } = useAppTheme();
   const t = getAppTheme(isDark);
   const insets = useSafeAreaInsets();
   const { show } = useToast();
-  const { setupPin, changePin, resetPin } = useAuth();
+  const { setupPin, changePin, resetPin, verifyPin } = useAuth();
 
   // Step handling
   // setup: 1 (new), 2 (confirm)
   // change: 1 (current), 2 (new), 3 (confirm)
   // reset: 1 (password verification), 2 (new), 3 (confirm)
+  // authorize: 1 (current pin)
   const [step, setStep] = useState(1);
   const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
@@ -49,7 +62,9 @@ export function PinSheet({ visible, mode, onClose, onSuccess, canCancel = true }
 
   // Active digits string being typed on keypad
   const activePin =
-    mode === 'setup'
+    mode === 'authorize'
+      ? currentPin
+      : mode === 'setup'
       ? step === 1
         ? newPin
         : confirmPin
@@ -85,6 +100,30 @@ export function PinSheet({ visible, mode, onClose, onSuccess, canCancel = true }
     if (activePin.length >= 4) return;
 
     const nextPin = activePin + digit;
+
+    if (mode === 'authorize') {
+      const next = currentPin + digit;
+      setCurrentPin(next);
+      if (next.length === 4) {
+        try {
+          setIsSubmitting(true);
+          if (onAuthorize) {
+            await onAuthorize(next);
+          } else {
+            const isValid = await verifyPin(next);
+            if (!isValid) throw new Error('Incorrect transaction PIN. Please try again.');
+          }
+          resetAll();
+          onSuccess();
+        } catch (e: any) {
+          setErrorMessage(e.message || 'Incorrect PIN');
+          setCurrentPin('');
+        } finally {
+          setIsSubmitting(false);
+        }
+      }
+      return;
+    }
 
     if (mode === 'setup') {
       if (step === 1) {
@@ -199,6 +238,11 @@ export function PinSheet({ visible, mode, onClose, onSuccess, canCancel = true }
     if (errorMessage) setErrorMessage('');
     if (isSubmitting) return;
 
+    if (mode === 'authorize') {
+      setCurrentPin((p) => p.slice(0, -1));
+      return;
+    }
+
     if (mode === 'setup') {
       if (step === 1) {
         setNewPin((p) => p.slice(0, -1));
@@ -233,6 +277,14 @@ export function PinSheet({ visible, mode, onClose, onSuccess, canCancel = true }
 
   // Get Title & Subtitle based on mode and step
   const getHeaderInfo = () => {
+    if (mode === 'authorize') {
+      return {
+        title: 'Enter Transaction PIN',
+        subtitle: amount
+          ? `Authorize ₦${amount} transfer to ${recipientName || 'recipient'}`
+          : 'Enter your 4-digit PIN to authorize payment',
+      };
+    }
     if (mode === 'setup') {
       return {
         title: step === 1 ? 'Create Transaction PIN' : 'Confirm Transaction PIN',

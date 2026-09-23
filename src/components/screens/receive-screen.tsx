@@ -3,7 +3,6 @@ import {
   ArrowRight01Icon,
   BubbleChatIcon,
   Copy01Icon,
-  Download01Icon,
   HelpCircleIcon,
   Link01Icon,
   MoreHorizontalIcon,
@@ -13,11 +12,13 @@ import {
   WhatsappIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
+import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import {
   Image,
   Platform,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -29,14 +30,41 @@ import QRCodeView from '@/components/ui/qr-code';
 import { useToast } from '@/components/ui/toast';
 import { getAppTheme, GRADIENT_STOPS } from '@/constants/app-theme';
 import { useAppTheme } from '@/hooks/theme-provider';
+import { useUserProfile } from '@/hooks/user-profile-provider';
 
 export function ReceiveScreen() {
   const router = useRouter();
   const { show } = useToast();
   const { isDark } = useAppTheme();
   const t = getAppTheme(isDark);
+  const { profile } = useUserProfile();
 
-  const receiveLink = 'https://nearbypay.app/receive/nby_7f3a2lX9q';
+  const cleanTag = (profile.tag || 'user').trim().replace(/^[@$]/, '');
+  const payUri = `nearbypay://pay?tag=${cleanTag}`;
+  const receiveLink = `https://nearbypay.me/@${cleanTag}`;
+
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await Clipboard.setStringAsync(text);
+    } catch {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      }
+    }
+    show({ message: `${label} copied to clipboard!`, variant: 'success' });
+  };
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `Send me money instantly on NearbyPay with my Cashtag @${cleanTag} or link: ${receiveLink}`,
+        url: receiveLink,
+        title: `Pay @${cleanTag} on NearbyPay`,
+      });
+    } catch {
+      show({ message: 'Unable to open share dialog', variant: 'error' });
+    }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: t.pageBg }]}>
@@ -93,13 +121,25 @@ export function ReceiveScreen() {
               <Text style={styles.logoText}>NearbyPay</Text>
             </View>
             <Text style={styles.qrSubtitle}>
-              Share your QR code or link so others can send you money.
+              Scan this QR code with NearbyPay to send to @{cleanTag}
             </Text>
+          </View>
+
+          {/* User Tag Chip */}
+          <View style={styles.userTagBadge}>
+            <Image
+              source={{ uri: profile.avatar }}
+              style={styles.badgeAvatar}
+            />
+            <View>
+              <Text style={styles.badgeName}>{profile.name}</Text>
+              <Text style={styles.badgeTag}>@{cleanTag}</Text>
+            </View>
           </View>
 
           {/* QR Code Container */}
           <View style={styles.qrSquare}>
-            <QRCodeView value={receiveLink} size={170} color="#0F172A" />
+            <QRCodeView value={payUri} size={170} color="#0F172A" />
             <View style={styles.qrCenterBadge}>
               <Image
                 source={require('@/assets/images/logo/logo.png')}
@@ -114,15 +154,15 @@ export function ReceiveScreen() {
             <TouchableOpacity
               style={styles.cardActionBtnPrimary}
               activeOpacity={0.85}
-              onPress={() => show({ message: 'QR Code saved to gallery.', variant: 'success' })}>
-              <HugeiconsIcon icon={Download01Icon} size={16} color="#101A5A" />
-              <Text style={styles.cardActionTextPrimary}>Download QR</Text>
+              onPress={() => copyToClipboard(`@${cleanTag}`, 'Cashtag')}>
+              <HugeiconsIcon icon={Copy01Icon} size={16} color="#101A5A" />
+              <Text style={styles.cardActionTextPrimary}>Copy Cashtag</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.cardActionBtn}
               activeOpacity={0.85}
-              onPress={() => show({ message: 'Share sheet opened.', variant: 'info' })}>
+              onPress={handleShare}>
               <HugeiconsIcon icon={Share08Icon} size={16} color="#FFFFFF" />
               <Text style={styles.cardActionText}>Share</Text>
             </TouchableOpacity>
@@ -130,10 +170,10 @@ export function ReceiveScreen() {
         </View>
 
         {/* Your Link Section */}
-        <Text style={[styles.sectionLabel, { color: t.textPrimary }]}>Your Link</Text>
+        <Text style={[styles.sectionLabel, { color: t.textPrimary }]}>Your Cashtag Link</Text>
         <View style={[styles.linkBox, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
           <HugeiconsIcon icon={Link01Icon} size={18} color={t.brand} />
-          <Text style={[styles.linkText, { color: t.textSecondary }]} numberOfLines={1}>
+          <Text style={[styles.linkText, { color: t.textPrimary, fontFamily: 'Montserrat_600SemiBold' }]} numberOfLines={1}>
             {receiveLink}
           </Text>
           <TouchableOpacity
@@ -141,7 +181,7 @@ export function ReceiveScreen() {
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel="Copy receive link"
-            onPress={() => show({ message: 'Link copied to clipboard.', variant: 'success' })}>
+            onPress={() => copyToClipboard(receiveLink, 'Cashtag link')}>
             <HugeiconsIcon icon={Copy01Icon} size={18} color={t.textPrimary} />
           </TouchableOpacity>
         </View>
@@ -297,6 +337,34 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     maxWidth: 240,
     lineHeight: 18,
+  },
+  userTagBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+  },
+  badgeAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#CBD5E1',
+  },
+  badgeName: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 12.5,
+    color: '#FFFFFF',
+  },
+  badgeTag: {
+    fontFamily: 'Montserrat_500Medium',
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.85)',
   },
   qrSquare: {
     backgroundColor: '#FFFFFF',
