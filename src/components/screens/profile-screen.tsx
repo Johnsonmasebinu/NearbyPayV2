@@ -43,10 +43,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import QRCodeView from '@/components/ui/qr-code';
 import { AvatarPickerSheet } from '@/components/ui/avatar-picker-sheet';
+import { PinSheet, type PinSheetMode } from '@/components/ui/pin-sheet';
 import { useToast } from '@/components/ui/toast';
 import { getAppTheme } from '@/constants/app-theme';
 import type { ThemeMode } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/theme-provider';
+import { useAuth } from '@/hooks/auth-provider';
 import { useUserProfile } from '@/hooks/user-profile-provider';
 
 export function ProfileScreen() {
@@ -54,6 +56,7 @@ export function ProfileScreen() {
   const t = getAppTheme(isDark);
   const { show } = useToast();
   const insets = useSafeAreaInsets();
+  const { signOut, hasPin } = useAuth();
   const { profile, updateAvatar, updateProfile } = useUserProfile();
 
   // Settings & preferences toggles
@@ -66,6 +69,8 @@ export function ProfileScreen() {
 
   // Sheets / Modals
   const [avatarPickerVisible, setAvatarPickerVisible] = useState(false);
+  const [pinSheetVisible, setPinSheetVisible] = useState(false);
+  const [pinSheetMode, setPinSheetMode] = useState<PinSheetMode>('change');
   const [qrSheetVisible, setQrSheetVisible] = useState(false);
   const [editSheetVisible, setEditSheetVisible] = useState(false);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
@@ -374,13 +379,18 @@ export function ProfileScreen() {
           <TouchableOpacity
             style={styles.groupedRow}
             activeOpacity={0.65}
-            onPress={() => show({ message: 'Security PIN change link sent to your email', variant: 'info' })}>
+            onPress={() => {
+              setPinSheetMode(hasPin ? 'change' : 'setup');
+              setPinSheetVisible(true);
+            }}>
             <View style={[styles.rowIconWrap, { backgroundColor: t.brandTint }]}>
               <HugeiconsIcon icon={LockPasswordIcon} size={18} color={t.brand} />
             </View>
             <View style={styles.rowContentWrap}>
               <Text style={[styles.rowItemTitle, { color: t.textPrimary }]}>Transaction PIN</Text>
-              <Text style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>Updated 2 months ago</Text>
+              <Text style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>
+                {hasPin ? 'Protected • Tap to change PIN' : 'Not set up • Tap to create PIN'}
+              </Text>
             </View>
             <HugeiconsIcon icon={ArrowRight01Icon} size={16} color={t.iconColor} />
           </TouchableOpacity>
@@ -736,9 +746,14 @@ export function ProfileScreen() {
               <TouchableOpacity
                 style={[styles.logoutConfirmBtn, { backgroundColor: t.danger }]}
                 activeOpacity={0.85}
-                onPress={() => {
+                onPress={async () => {
                   setLogoutModalVisible(false);
-                  show({ message: 'You have been safely logged out.', variant: 'info' });
+                  try {
+                    await signOut();
+                    show({ message: 'You have been safely logged out.', variant: 'info' });
+                  } catch (e: any) {
+                    show({ message: e.message || 'Error signing out', variant: 'error' });
+                  }
                 }}>
                 <Text style={styles.logoutConfirmBtnText}>Log Out</Text>
               </TouchableOpacity>
@@ -824,6 +839,14 @@ export function ProfileScreen() {
           show({ message: 'Avatar updated across NearbyPay!', variant: 'success' });
         }}
         onClose={() => setAvatarPickerVisible(false)}
+      />
+
+      {/* ─── Transaction PIN Management Sheet ────────────────────── */}
+      <PinSheet
+        visible={pinSheetVisible}
+        mode={pinSheetMode}
+        onClose={() => setPinSheetVisible(false)}
+        onSuccess={() => setPinSheetVisible(false)}
       />
     </ScrollView>
   );

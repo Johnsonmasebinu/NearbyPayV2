@@ -1,7 +1,9 @@
 import { LockPasswordIcon, Mail01Icon, UserIcon, ViewIcon, ViewOffSlashIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { useState } from 'react';
 import {
+    ActivityIndicator,
     ImageBackground,
     Image,
     Keyboard,
@@ -18,22 +20,84 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '@/hooks/theme-provider';
+import { useAuth } from '@/hooks/auth-provider';
+import { useUserProfile, AVAILABLE_AVATARS } from '@/hooks/user-profile-provider';
+import { useToast } from '@/components/ui/toast';
+import { AvatarPickerSheet } from '@/components/ui/avatar-picker-sheet';
 import { ThemedText } from '@/components/themed-text';
 
 interface SignupScreenProps {
-  onCreateAccount: () => void;
+  onCreateAccount?: () => void;
   onGoToLogin: () => void;
 }
 
 export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps) {
   const { isDark } = useAppTheme();
+  const { signUp } = useAuth();
+  const { profile } = useUserProfile();
+  const { show } = useToast();
+
   const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [chosenAvatar, setChosenAvatar] = useState(profile.avatar || AVAILABLE_AVATARS[0]);
+  const [avatarSheetVisible, setAvatarSheetVisible] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [focusedField, setFocusedField] = useState<'name' | 'email' | 'password' | 'confirm' | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [focusedField, setFocusedField] = useState<'name' | 'username' | 'email' | 'password' | 'confirm' | null>(null);
+
+  const handleSignUp = async () => {
+    if (isSubmitting) return;
+
+    const trimmedName = fullName.trim();
+    const cleanUsername = username.trim().toLowerCase().replace(/^[@$]/, '');
+    const cleanEmail = email.trim();
+
+    if (!trimmedName || trimmedName.length < 2) {
+      show({ message: 'Please enter your full name', variant: 'error' });
+      return;
+    }
+    if (!cleanUsername || cleanUsername.length < 3) {
+      show({ message: 'Username must be at least 3 characters', variant: 'error' });
+      return;
+    }
+    if (!/^[a-z0-9_]+$/.test(cleanUsername)) {
+      show({ message: 'Username can only contain letters, numbers, and underscores', variant: 'error' });
+      return;
+    }
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      show({ message: 'Please enter a valid email address', variant: 'error' });
+      return;
+    }
+    if (password.length < 6) {
+      show({ message: 'Password must be at least 6 characters', variant: 'error' });
+      return;
+    }
+    if (password !== confirmPassword) {
+      show({ message: 'Passwords do not match', variant: 'error' });
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await signUp({
+        fullName: trimmedName,
+        username: cleanUsername,
+        email: cleanEmail,
+        password,
+        avatarUrl: chosenAvatar,
+      });
+      show({ message: 'Account created! Welcome to NearbyPay.', variant: 'success' });
+      onCreateAccount?.();
+    } catch (err: any) {
+      show({ message: err.message || 'Signup failed. Please try again.', variant: 'error' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const pageBg = isDark ? '#020617' : '#EEF3FC';
   const cardBg = isDark ? '#0F172A' : '#FFFFFF';
@@ -83,6 +147,27 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                     Start sending and receiving money securely in seconds.
                   </Text>
 
+                  {/* Avatar Picker Quick Preview */}
+                  <View style={[styles.avatarPickerRow, { backgroundColor: inputBg, borderColor: inputBorder }]}>
+                    <TouchableOpacity
+                      style={[styles.avatarBadgeTouch, { borderColor: cardBorder }]}
+                      activeOpacity={0.8}
+                      onPress={() => setAvatarSheetVisible(true)}>
+                      <ExpoImage
+                        source={{ uri: chosenAvatar }}
+                        style={styles.chosenAvatarImg}
+                        contentFit="contain"
+                        cachePolicy="memory-disk"
+                      />
+                    </TouchableOpacity>
+                    <View style={styles.avatarPickerInfo}>
+                      <Text style={[styles.avatarPickerTitle, { color: textPrimary }]}>Profile Avatar</Text>
+                      <TouchableOpacity onPress={() => setAvatarSheetVisible(true)} hitSlop={6}>
+                        <Text style={styles.avatarChangeLink}>Change memo avatar</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
                   <View style={styles.fieldGroup}>
                     <Text style={[styles.label, { color: textPrimary }]}>Full name</Text>
                     <View
@@ -103,6 +188,34 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                         returnKeyType="next"
                         placeholderTextColor={iconColor}
                         onFocus={() => setFocusedField('name')}
+                        onBlur={() => setFocusedField(null)}
+                        style={[styles.input, { color: textPrimary }]}
+                      />
+                    </View>
+                  </View>
+
+                  <View style={styles.fieldGroup}>
+                    <Text style={[styles.label, { color: textPrimary }]}>Username</Text>
+                    <View
+                      style={[
+                        styles.inputWrap,
+                        {
+                          backgroundColor: inputBg,
+                          borderColor: focusedField === 'username' ? '#2B20F0' : inputBorder,
+                        },
+                      ]}>
+                      <Text style={styles.tagPrefix}>@</Text>
+                      <TextInput
+                        value={username}
+                        onChangeText={(val) => setUsername(val.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                        placeholder="alexmorgan"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        textContentType="username"
+                        autoComplete="username"
+                        returnKeyType="next"
+                        placeholderTextColor={iconColor}
+                        onFocus={() => setFocusedField('username')}
                         onBlur={() => setFocusedField(null)}
                         style={[styles.input, { color: textPrimary }]}
                       />
@@ -195,7 +308,7 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                         textContentType="newPassword"
                         autoComplete="password-new"
                         returnKeyType="go"
-                        onSubmitEditing={onCreateAccount}
+                        onSubmitEditing={handleSignUp}
                         placeholderTextColor={iconColor}
                         onFocus={() => setFocusedField('confirm')}
                         onBlur={() => setFocusedField(null)}
@@ -215,8 +328,16 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                     </View>
                   </View>
 
-                  <TouchableOpacity style={styles.primaryButton} onPress={onCreateAccount} activeOpacity={0.88}>
-                    <Text style={styles.primaryButtonText}>Create account</Text>
+                  <TouchableOpacity
+                    style={[styles.primaryButton, isSubmitting && { opacity: 0.7 }]}
+                    onPress={handleSignUp}
+                    disabled={isSubmitting}
+                    activeOpacity={0.88}>
+                    {isSubmitting ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.primaryButtonText}>Create account</Text>
+                    )}
                   </TouchableOpacity>
 
                   <View style={styles.dividerRow}>
@@ -237,6 +358,13 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
           </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
       </SafeAreaView>
+
+      <AvatarPickerSheet
+        visible={avatarSheetVisible}
+        currentAvatar={chosenAvatar}
+        onSelect={(newAvatar) => setChosenAvatar(newAvatar)}
+        onClose={() => setAvatarSheetVisible(false)}
+      />
     </ImageBackground>
   );
 }
@@ -397,5 +525,49 @@ const styles = StyleSheet.create({
     color: '#2B20F0',
     fontFamily: 'Montserrat_700Bold',
     fontSize: 13,
+  },
+  avatarPickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 10,
+    marginTop: -4,
+    marginBottom: 4,
+  },
+  avatarBadgeTouch: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  chosenAvatarImg: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  avatarPickerInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  avatarPickerTitle: {
+    fontFamily: 'Montserrat_600SemiBold',
+    fontSize: 13,
+  },
+  avatarChangeLink: {
+    color: '#2B20F0',
+    fontFamily: 'Montserrat_600SemiBold',
+    fontSize: 12,
+  },
+  tagPrefix: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 16,
+    color: '#2B20F0',
+    marginLeft: 2,
+    marginRight: -4,
   },
 });

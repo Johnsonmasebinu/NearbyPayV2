@@ -1,7 +1,8 @@
-import { Mail01Icon } from '@hugeicons/core-free-icons';
+import { Mail01Icon, CheckmarkCircle02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useState } from 'react';
 import {
+    ActivityIndicator,
     ImageBackground,
     Image,
     Keyboard,
@@ -18,17 +19,44 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '@/hooks/theme-provider';
+import { useAuth } from '@/hooks/auth-provider';
+import { useToast } from '@/components/ui/toast';
 import { ThemedText } from '@/components/themed-text';
 
 interface ForgotPasswordScreenProps {
-  onResetPassword: () => void;
+  onResetPassword?: () => void;
   onBackToLogin: () => void;
 }
 
 export function ForgotPasswordScreen({ onResetPassword, onBackToLogin }: ForgotPasswordScreenProps) {
   const { isDark } = useAppTheme();
+  const { sendPasswordReset } = useAuth();
+  const { show } = useToast();
   const [email, setEmail] = useState('');
   const [focused, setFocused] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSent, setIsSent] = useState(false);
+
+  const handleReset = async () => {
+    if (isSubmitting) return;
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      show({ message: 'Please enter a valid email address', variant: 'error' });
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await sendPasswordReset(cleanEmail);
+      setIsSent(true);
+      show({ message: 'Password reset link sent to your email!', variant: 'success' });
+      onResetPassword?.();
+    } catch (err: any) {
+      show({ message: err.message || 'Failed to send reset link', variant: 'error' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const pageBg = isDark ? '#020617' : '#EEF3FC';
   const cardBg = isDark ? '#0F172A' : '#FFFFFF';
@@ -72,53 +100,77 @@ export function ForgotPasswordScreen({ onResetPassword, onBackToLogin }: ForgotP
                   </View>
                 </View>
 
-                <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
-                  <ThemedText style={[styles.title, { color: textPrimary }]}>Reset your password</ThemedText>
-                  <Text style={[styles.subtitle, { color: textSecondary }]}>
-                    Enter your email to receive a secure reset link.
-                  </Text>
-
-                  <View style={styles.fieldGroup}>
-                    <Text style={[styles.label, { color: textPrimary }]}>Email</Text>
-                    <View
-                      style={[
-                        styles.inputWrap,
-                        { backgroundColor: inputBg, borderColor: focused ? '#2B20F0' : inputBorder },
-                      ]}>
-                      <HugeiconsIcon icon={Mail01Icon} size={18} color={iconColor} strokeWidth={1.8} />
-                      <TextInput
-                        value={email}
-                        onChangeText={setEmail}
-                        placeholder="name@email.com"
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        keyboardType="email-address"
-                        textContentType="emailAddress"
-                        autoComplete="email"
-                        returnKeyType="go"
-                        onSubmitEditing={onResetPassword}
-                        placeholderTextColor={iconColor}
-                        onFocus={() => setFocused(true)}
-                        onBlur={() => setFocused(false)}
-                        style={[styles.input, { color: textPrimary }]}
-                      />
+                {isSent ? (
+                  <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+                    <View style={styles.sentIconWrap}>
+                      <HugeiconsIcon icon={CheckmarkCircle02Icon} size={48} color="#10B981" />
                     </View>
+                    <ThemedText style={[styles.title, { textAlign: 'center', color: textPrimary }]}>Check your inbox</ThemedText>
+                    <Text style={[styles.subtitle, { textAlign: 'center', color: textSecondary, marginTop: -4 }]}>
+                      {"We've sent a password reset link to\n"}
+                      <Text style={{ fontWeight: '700', color: textPrimary }}>{email.trim()}</Text>
+                    </Text>
+                    <TouchableOpacity style={styles.primaryButton} onPress={onBackToLogin} activeOpacity={0.88}>
+                      <Text style={styles.primaryButtonText}>Back to Sign In</Text>
+                    </TouchableOpacity>
                   </View>
+                ) : (
+                  <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+                    <ThemedText style={[styles.title, { color: textPrimary }]}>Reset your password</ThemedText>
+                    <Text style={[styles.subtitle, { color: textSecondary }]}>
+                      Enter your email to receive a secure reset link.
+                    </Text>
 
-                  <TouchableOpacity style={styles.primaryButton} onPress={onResetPassword} activeOpacity={0.88}>
-                    <Text style={styles.primaryButtonText}>Send reset link</Text>
-                  </TouchableOpacity>
+                    <View style={styles.fieldGroup}>
+                      <Text style={[styles.label, { color: textPrimary }]}>Email</Text>
+                      <View
+                        style={[
+                          styles.inputWrap,
+                          { backgroundColor: inputBg, borderColor: focused ? '#2B20F0' : inputBorder },
+                        ]}>
+                        <HugeiconsIcon icon={Mail01Icon} size={18} color={iconColor} strokeWidth={1.8} />
+                        <TextInput
+                          value={email}
+                          onChangeText={setEmail}
+                          placeholder="name@email.com"
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          keyboardType="email-address"
+                          textContentType="emailAddress"
+                          autoComplete="email"
+                          returnKeyType="go"
+                          onSubmitEditing={handleReset}
+                          placeholderTextColor={iconColor}
+                          onFocus={() => setFocused(true)}
+                          onBlur={() => setFocused(false)}
+                          style={[styles.input, { color: textPrimary }]}
+                        />
+                      </View>
+                    </View>
 
-                  <View style={styles.dividerRow}>
-                    <View style={[styles.dividerLine, { backgroundColor: cardBorder }]} />
-                    <Text style={[styles.dividerText, { color: textSecondary }]}>secure reset</Text>
-                    <View style={[styles.dividerLine, { backgroundColor: cardBorder }]} />
+                    <TouchableOpacity
+                      style={[styles.primaryButton, isSubmitting && { opacity: 0.7 }]}
+                      onPress={handleReset}
+                      disabled={isSubmitting}
+                      activeOpacity={0.88}>
+                      {isSubmitting ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <Text style={styles.primaryButtonText}>Send reset link</Text>
+                      )}
+                    </TouchableOpacity>
+
+                    <View style={styles.dividerRow}>
+                      <View style={[styles.dividerLine, { backgroundColor: cardBorder }]} />
+                      <Text style={[styles.dividerText, { color: textSecondary }]}>secure reset</Text>
+                      <View style={[styles.dividerLine, { backgroundColor: cardBorder }]} />
+                    </View>
+
+                    <TouchableOpacity onPress={onBackToLogin} hitSlop={8}>
+                      <Text style={styles.backText}>Back to sign in</Text>
+                    </TouchableOpacity>
                   </View>
-
-                  <TouchableOpacity onPress={onBackToLogin} hitSlop={8}>
-                    <Text style={styles.backText}>Back to sign in</Text>
-                  </TouchableOpacity>
-                </View>
+                )}
               </View>
             </ScrollView>
           </TouchableWithoutFeedback>
@@ -275,5 +327,10 @@ const styles = StyleSheet.create({
     color: '#2B20F0',
     fontFamily: 'Montserrat_700Bold',
     fontSize: 13,
+  },
+  sentIconWrap: {
+    alignSelf: 'center',
+    padding: 8,
+    marginTop: 4,
   },
 });

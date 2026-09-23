@@ -2,6 +2,7 @@ import { LockPasswordIcon, Mail01Icon, ViewIcon, ViewOffSlashIcon } from '@hugei
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useState } from 'react';
 import {
+    ActivityIndicator,
     ImageBackground,
     Image,
     Keyboard,
@@ -18,20 +19,49 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '@/hooks/theme-provider';
+import { useAuth } from '@/hooks/auth-provider';
+import { useToast } from '@/components/ui/toast';
 import { ThemedText } from '@/components/themed-text';
 
 interface LoginScreenProps {
-  onLogin: () => void;
+  onLogin?: () => void;
   onGoToSignup: () => void;
   onForgotPassword: () => void;
 }
 
 export function LoginScreen({ onLogin, onGoToSignup, onForgotPassword }: LoginScreenProps) {
   const { isDark } = useAppTheme();
+  const { signIn } = useAuth();
+  const { show } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [focusedField, setFocusedField] = useState<'email' | 'password' | null>(null);
+
+  const handleLogin = async () => {
+    if (isSubmitting) return;
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      show({ message: 'Please enter your email address', variant: 'error' });
+      return;
+    }
+    if (!password) {
+      show({ message: 'Please enter your password', variant: 'error' });
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await signIn(cleanEmail, password);
+      show({ message: 'Welcome back!', variant: 'success' });
+      onLogin?.();
+    } catch (err: any) {
+      show({ message: err.message || 'Login failed. Please check credentials.', variant: 'error' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const pageBg = isDark ? '#020617' : '#EEF3FC';
   const cardBg = isDark ? '#0F172A' : '#FFFFFF';
@@ -136,7 +166,7 @@ export function LoginScreen({ onLogin, onGoToSignup, onForgotPassword }: LoginSc
                         textContentType="password"
                         autoComplete="password"
                         returnKeyType="go"
-                        onSubmitEditing={onLogin}
+                        onSubmitEditing={handleLogin}
                         placeholderTextColor={iconColor}
                         onFocus={() => setFocusedField('password')}
                         onBlur={() => setFocusedField(null)}
@@ -156,8 +186,16 @@ export function LoginScreen({ onLogin, onGoToSignup, onForgotPassword }: LoginSc
                     </View>
                   </View>
 
-                  <TouchableOpacity style={styles.primaryButton} onPress={onLogin} activeOpacity={0.88}>
-                    <Text style={styles.primaryButtonText}>Log In</Text>
+                  <TouchableOpacity
+                    style={[styles.primaryButton, isSubmitting && { opacity: 0.7 }]}
+                    onPress={handleLogin}
+                    disabled={isSubmitting}
+                    activeOpacity={0.88}>
+                    {isSubmitting ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.primaryButtonText}>Log In</Text>
+                    )}
                   </TouchableOpacity>
 
                   <View style={styles.dividerRow}>

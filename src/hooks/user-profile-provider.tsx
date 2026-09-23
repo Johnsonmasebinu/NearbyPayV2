@@ -2,6 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
+import { useAuth } from '@/hooks/auth-provider';
+
 export const AVAILABLE_AVATARS: string[] = Array.from(
   { length: 25 },
   (_, i) => `https://cdn.jsdelivr.net/gh/alohe/avatars/png/memo_${i + 1}.png`
@@ -45,7 +47,7 @@ const DEFAULT_PROFILE: UserProfile = {
   email: 'chinedu.okafor@gmail.com',
   phone: '+234 803 123 4567',
   bio: 'Fintech enthusiast & frequent nearby merchant payer ⚡',
-  avatar: AVAILABLE_AVATARS[0], // Starts at memo_1.png, not memo_23
+  avatar: AVAILABLE_AVATARS[0],
   accountNumber: '9012345678',
   bankName: 'Providus Bank • Virtual Account',
 };
@@ -53,10 +55,11 @@ const DEFAULT_PROFILE: UserProfile = {
 const UserProfileContext = createContext<UserProfileContextType | null>(null);
 
 export function UserProfileProvider({ children }: { children: ReactNode }) {
-  const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  const { profile: authProfile, updateProfile: authUpdateProfile, updateAvatar: authUpdateAvatar } = useAuth();
+  const [localProfile, setLocalProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Preload all avatar images and load saved profile from storage on mount
+  // Preload avatars & load saved local cache on mount
   useEffect(() => {
     preloadAvatarImages();
 
@@ -66,18 +69,32 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
         if (saved) {
           const parsed = JSON.parse(saved);
           if (parsed && typeof parsed === 'object') {
-            setProfile((prev) => ({ ...prev, ...parsed }));
+            setLocalProfile((prev) => ({ ...prev, ...parsed }));
           }
         }
       } catch {
-        // fallback to default
+        // fallback
       } finally {
         setIsLoaded(true);
       }
     })();
   }, []);
 
-  const saveToStorage = async (updated: UserProfile) => {
+  // Active profile: use Supabase profile if user is logged in, else use local profile
+  const activeProfile: UserProfile = authProfile
+    ? {
+        name: authProfile.name,
+        tag: authProfile.tag,
+        email: authProfile.email,
+        phone: authProfile.phone,
+        bio: authProfile.bio,
+        avatar: authProfile.avatar,
+        accountNumber: authProfile.accountNumber,
+        bankName: authProfile.bankName,
+      }
+    : localProfile;
+
+  const saveLocalToStorage = async (updated: UserProfile) => {
     try {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     } catch {
@@ -86,23 +103,36 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
   };
 
   const updateAvatar = (newAvatarUrl: string) => {
-    setProfile((prev) => {
+    setLocalProfile((prev) => {
       const next = { ...prev, avatar: newAvatarUrl };
-      saveToStorage(next);
+      saveLocalToStorage(next);
       return next;
     });
+    if (authProfile) {
+      authUpdateAvatar(newAvatarUrl).catch(() => {});
+    }
   };
 
   const updateProfile = (partial: Partial<UserProfile>) => {
-    setProfile((prev) => {
+    setLocalProfile((prev) => {
       const next = { ...prev, ...partial };
-      saveToStorage(next);
+      saveLocalToStorage(next);
       return next;
     });
+    if (authProfile) {
+      authUpdateProfile(partial).catch(() => {});
+    }
   };
 
   return (
-    <UserProfileContext.Provider value={{ profile, setProfile, updateAvatar, updateProfile, isLoaded }}>
+    <UserProfileContext.Provider
+      value={{
+        profile: activeProfile,
+        setProfile: setLocalProfile,
+        updateAvatar,
+        updateProfile,
+        isLoaded,
+      }}>
       {children}
     </UserProfileContext.Provider>
   );
