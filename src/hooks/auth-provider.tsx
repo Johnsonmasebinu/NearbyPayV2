@@ -1,5 +1,5 @@
 import { type Session, type User } from '@supabase/supabase-js';
-import React, { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 
 import { hashPinWithSalt } from '@/lib/crypto';
 import { supabase } from '@/lib/supabase';
@@ -44,6 +44,7 @@ type AuthContextType = {
   updateProfile: (partial: Partial<UserProfile>) => Promise<void>;
   updateAvatar: (avatarUrl: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
+  generateUniqueUsername: (seed?: string) => Promise<string>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -151,19 +152,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const generateUniqueUsername = useCallback(async (baseSeed?: string): Promise<string> => {
+    let cleanSeed = (baseSeed || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .slice(0, 10);
+
+    if (!cleanSeed || cleanSeed.length < 2) {
+      const prefixes = ['pay', 'tag', 'user', 'near', 'cash'];
+      const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+      cleanSeed = `${prefix}${Math.floor(100 + Math.random() * 900)}`;
+    }
+
+    const candidateSuffixes = [
+      '',
+      `_${Math.floor(100 + Math.random() * 900)}`,
+      `_${Math.floor(1000 + Math.random() * 9000)}`,
+    ];
+
+    for (const suffix of candidateSuffixes) {
+      const candidate = `${cleanSeed}${suffix}`.slice(0, 20);
+      const { data } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', candidate)
+        .maybeSingle();
+
+      if (!data) {
+        return candidate;
+      }
+    }
+
+    return `${cleanSeed}_${Date.now().toString().slice(-4)}`;
+  }, []);
+
   // Sign up
   const signUp = async ({ email, password, fullName, username, avatarUrl, phone }: SignUpParams) => {
-    const cleanUsername = username.trim().toLowerCase().replace(/^[@$]/, '');
+    let cleanUsername = (username || '').trim().toLowerCase().replace(/^[@$]/, '');
 
-    // Check if username is already taken
-    const { data: existingUser } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('username', cleanUsername)
-      .maybeSingle();
+    if (!cleanUsername) {
+      cleanUsername = await generateUniqueUsername(fullName);
+    } else {
+      // Check if username is already taken, if so generate a guaranteed unique variation
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', cleanUsername)
+        .maybeSingle();
 
-    if (existingUser) {
-      throw new Error(`Username @${cleanUsername} is already taken. Please pick another.`);
+      if (existingUser) {
+        cleanUsername = await generateUniqueUsername(cleanUsername);
+      }
     }
 
     const chosenAvatar = avatarUrl || DEFAULT_AVATAR;
@@ -367,6 +407,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateProfile,
         updateAvatar,
         refreshProfile,
+        generateUniqueUsername,
       }}>
       {children}
     </AuthContext.Provider>

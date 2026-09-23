@@ -1,7 +1,16 @@
-import { LockPasswordIcon, Mail01Icon, UserIcon, ViewIcon, ViewOffSlashIcon } from '@hugeicons/core-free-icons';
+import {
+  Camera01Icon,
+  LockPasswordIcon,
+  Mail01Icon,
+  SparklesIcon,
+  Tick02Icon,
+  UserIcon,
+  ViewIcon,
+  ViewOffSlashIcon,
+} from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { Image as ExpoImage } from 'expo-image';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     ImageBackground,
@@ -33,7 +42,7 @@ interface SignupScreenProps {
 
 export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps) {
   const { isDark } = useAppTheme();
-  const { signUp } = useAuth();
+  const { signUp, generateUniqueUsername } = useAuth();
   const { profile } = useUserProfile();
   const { show } = useToast();
 
@@ -47,7 +56,39 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingUsername, setIsGeneratingUsername] = useState(false);
   const [focusedField, setFocusedField] = useState<'name' | 'username' | 'email' | 'password' | 'confirm' | null>(null);
+
+  const generateSystemUsername = useCallback(async (nameSeed?: string) => {
+    try {
+      setIsGeneratingUsername(true);
+      const generated = await generateUniqueUsername(nameSeed || fullName || 'pay');
+      setUsername(generated);
+    } catch {
+      // fallback
+    } finally {
+      setIsGeneratingUsername(false);
+    }
+  }, [generateUniqueUsername, fullName]);
+
+  useEffect(() => {
+    let isMounted = true;
+    generateUniqueUsername('pay').then((generated) => {
+      if (isMounted) {
+        setUsername((prev) => prev || generated);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [generateUniqueUsername]);
+
+  const handleFullNameChange = (text: string) => {
+    setFullName(text);
+    if (text.trim().length >= 2) {
+      generateSystemUsername(text);
+    }
+  };
 
   const handleSignUp = async () => {
     if (isSubmitting) return;
@@ -147,26 +188,34 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                     Start sending and receiving money securely in seconds.
                   </Text>
 
-                  {/* Avatar Picker Quick Preview */}
-                  <View style={[styles.avatarPickerRow, { backgroundColor: inputBg, borderColor: inputBorder }]}>
-                    <TouchableOpacity
-                      style={[styles.avatarBadgeTouch, { borderColor: cardBorder }]}
-                      activeOpacity={0.8}
-                      onPress={() => setAvatarSheetVisible(true)}>
-                      <ExpoImage
-                        source={{ uri: chosenAvatar }}
-                        style={styles.chosenAvatarImg}
-                        contentFit="contain"
-                        cachePolicy="memory-disk"
-                      />
-                    </TouchableOpacity>
-                    <View style={styles.avatarPickerInfo}>
-                      <Text style={[styles.avatarPickerTitle, { color: textPrimary }]}>Profile Avatar</Text>
-                      <TouchableOpacity onPress={() => setAvatarSheetVisible(true)} hitSlop={6}>
-                        <Text style={styles.avatarChangeLink}>Change memo avatar</Text>
-                      </TouchableOpacity>
+                  {/* Profile Avatar Card - Tapping opens Bottom Sheet */}
+                  <TouchableOpacity
+                    style={[styles.avatarSelectorCard, { backgroundColor: inputBg, borderColor: inputBorder }]}
+                    activeOpacity={0.8}
+                    onPress={() => setAvatarSheetVisible(true)}>
+                    <View style={styles.avatarCardLeft}>
+                      <View style={[styles.avatarPreviewRing, { borderColor: '#2B20F0' }]}>
+                        <ExpoImage
+                          source={{ uri: chosenAvatar }}
+                          style={styles.avatarPreviewImg}
+                          contentFit="contain"
+                          cachePolicy="memory-disk"
+                        />
+                        <View style={styles.cameraIconBadge}>
+                          <HugeiconsIcon icon={Camera01Icon} size={11} color="#FFFFFF" strokeWidth={2} />
+                        </View>
+                      </View>
+                      <View style={styles.avatarCardInfo}>
+                        <Text style={[styles.avatarCardTitle, { color: textPrimary }]}>Profile Avatar</Text>
+                        <Text style={[styles.avatarCardSubtitle, { color: textSecondary }]}>
+                          Tap to select memo or upload photo
+                        </Text>
+                      </View>
                     </View>
-                  </View>
+                    <View style={styles.changePill}>
+                      <Text style={styles.changePillText}>Change</Text>
+                    </View>
+                  </TouchableOpacity>
 
                   <View style={styles.fieldGroup}>
                     <Text style={[styles.label, { color: textPrimary }]}>Full name</Text>
@@ -181,7 +230,7 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                       <HugeiconsIcon icon={UserIcon} size={18} color={iconColor} strokeWidth={1.8} />
                       <TextInput
                         value={fullName}
-                        onChangeText={setFullName}
+                        onChangeText={handleFullNameChange}
                         placeholder="Alex Morgan"
                         textContentType="name"
                         autoComplete="name"
@@ -195,7 +244,17 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                   </View>
 
                   <View style={styles.fieldGroup}>
-                    <Text style={[styles.label, { color: textPrimary }]}>Username</Text>
+                    <View style={styles.labelRow}>
+                      <Text style={[styles.label, { color: textPrimary }]}>NearbyPay Cashtag</Text>
+                      <TouchableOpacity
+                        onPress={() => generateSystemUsername(fullName)}
+                        disabled={isGeneratingUsername}
+                        hitSlop={6}
+                        style={styles.shuffleRow}>
+                        <HugeiconsIcon icon={SparklesIcon} size={13} color="#2B20F0" />
+                        <Text style={styles.shuffleText}>Shuffle</Text>
+                      </TouchableOpacity>
+                    </View>
                     <View
                       style={[
                         styles.inputWrap,
@@ -219,6 +278,24 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                         onBlur={() => setFocusedField(null)}
                         style={[styles.input, { color: textPrimary }]}
                       />
+                      <TouchableOpacity
+                        onPress={() => generateSystemUsername(fullName)}
+                        disabled={isGeneratingUsername}
+                        hitSlop={8}
+                        style={styles.inputActionIcon}>
+                        {isGeneratingUsername ? (
+                          <ActivityIndicator size="small" color="#2B20F0" />
+                        ) : (
+                          <HugeiconsIcon icon={SparklesIcon} size={18} color="#2B20F0" />
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                    <View style={styles.usernameStatusRow}>
+                      <View style={[styles.statusBadge, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5' }]}>
+                        <HugeiconsIcon icon={Tick02Icon} size={11} color="#10B981" strokeWidth={3} />
+                        <Text style={[styles.statusBadgeText, { color: '#10B981' }]}>System-Generated & Unique</Text>
+                      </View>
+                      <Text style={[styles.usernameHint, { color: textSecondary }]}>Nearby cashtag</Text>
                     </View>
                   </View>
 
@@ -526,48 +603,119 @@ const styles = StyleSheet.create({
     fontFamily: 'Montserrat_700Bold',
     fontSize: 13,
   },
-  avatarPickerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 10,
-    marginTop: -4,
-    marginBottom: 4,
-  },
-  avatarBadgeTouch: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  chosenAvatarImg: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  avatarPickerInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  avatarPickerTitle: {
-    fontFamily: 'Montserrat_600SemiBold',
-    fontSize: 13,
-  },
-  avatarChangeLink: {
-    color: '#2B20F0',
-    fontFamily: 'Montserrat_600SemiBold',
-    fontSize: 12,
-  },
   tagPrefix: {
     fontFamily: 'Montserrat_700Bold',
     fontSize: 16,
     color: '#2B20F0',
     marginLeft: 2,
     marginRight: -4,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  shuffleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  shuffleText: {
+    color: '#2B20F0',
+    fontFamily: 'Montserrat_600SemiBold',
+    fontSize: 12,
+  },
+  inputActionIcon: {
+    paddingHorizontal: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  usernameStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 2,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 100,
+  },
+  statusBadgeText: {
+    fontFamily: 'Montserrat_600SemiBold',
+    fontSize: 10.5,
+  },
+  usernameHint: {
+    fontFamily: 'Montserrat_400Regular',
+    fontSize: 11,
+  },
+  avatarSelectorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginTop: -4,
+  },
+  avatarCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  avatarPreviewRing: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  avatarPreviewImg: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  cameraIconBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#2B20F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  avatarCardInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  avatarCardTitle: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 14,
+  },
+  avatarCardSubtitle: {
+    fontFamily: 'Montserrat_400Regular',
+    fontSize: 11.5,
+  },
+  changePill: {
+    backgroundColor: 'rgba(43, 32, 240, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 100,
+  },
+  changePillText: {
+    color: '#2B20F0',
+    fontFamily: 'Montserrat_600SemiBold',
+    fontSize: 12,
   },
 });

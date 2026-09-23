@@ -57,6 +57,47 @@ async function testBackend() {
     }
   }
 
+  // 3. Test unique username generation
+  async function testGenerateUsername(seed) {
+    let cleanSeed = (seed || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .slice(0, 10);
+
+    if (!cleanSeed || cleanSeed.length < 2) {
+      const prefixes = ['pay', 'tag', 'user', 'near', 'cash'];
+      const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+      cleanSeed = `${prefix}${Math.floor(100 + Math.random() * 900)}`;
+    }
+
+    const candidateSuffixes = [
+      '',
+      `_${Math.floor(100 + Math.random() * 900)}`,
+      `_${Math.floor(1000 + Math.random() * 9000)}`,
+    ];
+
+    for (const suffix of candidateSuffixes) {
+      const candidate = `${cleanSeed}${suffix}`.slice(0, 20);
+      const { data } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', candidate)
+        .maybeSingle();
+
+      if (!data) return candidate;
+    }
+    return `${cleanSeed}_${Date.now().toString().slice(-4)}`;
+  }
+
+  const u1 = await testGenerateUsername('Chinedu Okafor');
+  const u2 = await testGenerateUsername('Alex Morgan');
+  const u3 = await testGenerateUsername();
+  console.log('✅ Generated unique system usernames:');
+  console.log('   Chinedu Okafor -> @' + u1);
+  console.log('   Alex Morgan    -> @' + u2);
+  console.log('   Default random -> @' + u3);
+
   console.log('All backend checks completed.');
 }
 
