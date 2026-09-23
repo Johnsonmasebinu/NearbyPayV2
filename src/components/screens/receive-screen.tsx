@@ -22,18 +22,18 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useColorScheme,
 } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 import QRCodeView from '@/components/ui/qr-code';
 import { useToast } from '@/components/ui/toast';
 import { getAppTheme, GRADIENT_STOPS } from '@/constants/app-theme';
+import { useAppTheme } from '@/hooks/theme-provider';
 
 export function ReceiveScreen() {
   const router = useRouter();
   const { show } = useToast();
-  const isDark = useColorScheme() === 'dark';
+  const { isDark } = useAppTheme();
   const t = getAppTheme(isDark);
 
   const receiveLink = 'https://nearbypay.app/receive/nby_7f3a2lX9q';

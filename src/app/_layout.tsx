@@ -4,6 +4,7 @@ import { NavigationBar } from 'expo-navigation-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useState } from 'react';
 import { Platform } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { ForgotPasswordScreen } from '@/components/auth/forgot-password-screen';
@@ -13,6 +14,8 @@ import { Onboarding } from '@/components/onboarding';
 import { ThemeModeProvider, useAppTheme } from '@/hooks/theme-provider';
 import { ToastProvider } from '@/components/ui/toast';
 
+import { UserProfileProvider } from '@/hooks/user-profile-provider';
+
 SplashScreen.preventAutoHideAsync();
 
 type AuthView = 'login' | 'signup' | 'forgot-password';
@@ -20,7 +23,9 @@ type AuthView = 'login' | 'signup' | 'forgot-password';
 export default function TabLayout() {
   return (
     <ThemeModeProvider>
-      <RootShell />
+      <UserProfileProvider>
+        <RootShell />
+      </UserProfileProvider>
     </ThemeModeProvider>
   );
 }
@@ -75,6 +80,7 @@ function RootShell() {
 
   return (
     <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       {Platform.OS === 'android' && <NavigationBar style={isDark ? 'dark' : 'light'} />}
       <ToastProvider>
         <AnimatedSplashOverlay />
@@ -84,6 +90,7 @@ function RootShell() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="index" />
+            <Stack.Screen name="more" />
           </Stack>
         ) : (
           renderAuthScreen()

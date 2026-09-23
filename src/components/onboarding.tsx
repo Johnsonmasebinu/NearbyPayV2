@@ -8,14 +8,16 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useColorScheme,
   useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import { Moon02Icon, Sun03Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
 
-import { ThemedText } from './themed-text';
-import { ThemedView } from './themed-view';
+import { getAppTheme } from '@/constants/app-theme';
+import { useAppTheme } from '@/hooks/theme-provider';
 
 type SlideData = {
   id: string;
@@ -25,8 +27,6 @@ type SlideData = {
   description: string;
   isWide?: boolean;
 };
-
-const PRIMARY_COLOR = '#2B20F0';
 
 const SLIDES: SlideData[] = [
   {
@@ -62,8 +62,8 @@ interface OnboardingProps {
 export function Onboarding({ onFinish }: OnboardingProps) {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const { isDark, setMode } = useAppTheme();
+  const t = getAppTheme(isDark);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList<SlideData>>(null);
@@ -112,7 +112,7 @@ export function Onboarding({ onFinish }: OnboardingProps) {
                 width: backdropSize,
                 height: backdropSize,
                 borderRadius: backdropSize / 2,
-                backgroundColor: isDark ? 'rgba(43, 32, 240, 0.16)' : 'rgba(43, 32, 240, 0.06)',
+                backgroundColor: isDark ? 'rgba(93, 124, 255, 0.16)' : 'rgba(43, 32, 240, 0.06)',
               },
             ]}
           />
@@ -135,22 +135,20 @@ export function Onboarding({ onFinish }: OnboardingProps) {
             style={[
               styles.badgeChip,
               {
-                backgroundColor: isDark
-                  ? 'rgba(43, 32, 240, 0.22)'
-                  : 'rgba(43, 32, 240, 0.08)',
+                backgroundColor: t.brandTint,
               },
             ]}>
-            <Text style={styles.badgeText}>{item.badge}</Text>
+            <Text style={[styles.badgeText, { color: t.brand }]}>{item.badge}</Text>
           </View>
 
           {/* Scaled & Refined Title */}
-          <ThemedText style={styles.title}>{item.title}</ThemedText>
+          <Text style={[styles.title, { color: t.textPrimary }]}>{item.title}</Text>
 
           {/* Description */}
           <Text
             style={[
               styles.description,
-              { color: isDark ? '#94A3B8' : '#64748B' },
+              { color: t.textSecondary },
             ]}>
             {item.description}
           </Text>
@@ -162,7 +160,9 @@ export function Onboarding({ onFinish }: OnboardingProps) {
   const isLastSlide = currentIndex === SLIDES.length - 1;
 
   return (
-    <ThemedView style={styles.container}>
+    <View style={[styles.container, { backgroundColor: t.pageBg }]}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+
       {/* Top Header Bar */}
       <View
         style={[
@@ -181,28 +181,38 @@ export function Onboarding({ onFinish }: OnboardingProps) {
           <Text
             style={[
               styles.brandName,
-              { color: isDark ? '#F1F5F9' : '#0F172A' },
+              { color: t.textPrimary },
             ]}>
             NearbyPay
           </Text>
         </View>
 
-        {!isLastSlide ? (
+        <View style={styles.topRightActions}>
           <TouchableOpacity
-            onPress={handleSkip}
-            hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
-            style={styles.skipButton}>
-            <Text
-              style={[
-                styles.skipText,
-                { color: isDark ? '#94A3B8' : '#64748B' },
-              ]}>
-              Skip
-            </Text>
+            onPress={() => setMode(isDark ? 'light' : 'dark')}
+            style={[styles.themeToggleBtn, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel="Toggle dark/light mode">
+            <HugeiconsIcon icon={isDark ? Sun03Icon : Moon02Icon} size={16} color={t.textPrimary} />
           </TouchableOpacity>
-        ) : (
-          <View style={styles.skipPlaceholder} />
-        )}
+
+          {!isLastSlide ? (
+            <TouchableOpacity
+              onPress={handleSkip}
+              hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
+              style={[styles.skipButton, { backgroundColor: t.chipBg }]}>
+              <Text
+                style={[
+                  styles.skipText,
+                  { color: t.textSecondary },
+                ]}>
+                Skip
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.skipPlaceholder} />
+          )}
+        </View>
       </View>
 
       {/* Main Slides Carousel */}
@@ -243,10 +253,10 @@ export function Onboarding({ onFinish }: OnboardingProps) {
                   isActive ? styles.activeDot : styles.inactiveDot,
                   {
                     backgroundColor: isActive
-                      ? PRIMARY_COLOR
+                      ? t.brand
                       : isDark
                       ? '#334155'
-                      : '#E2E8F0',
+                      : '#CBD5E1',
                   },
                 ]}
               />
@@ -256,7 +266,7 @@ export function Onboarding({ onFinish }: OnboardingProps) {
 
         {/* Primary CTA Button */}
         <TouchableOpacity
-          style={styles.primaryButton}
+          style={[styles.primaryButton, { backgroundColor: t.brand, shadowColor: t.brand }]}
           onPress={handleNext}
           activeOpacity={0.88}>
           <Text style={styles.primaryButtonText}>
@@ -265,7 +275,7 @@ export function Onboarding({ onFinish }: OnboardingProps) {
           <Text style={styles.buttonArrow}>→</Text>
         </TouchableOpacity>
       </View>
-    </ThemedView>
+    </View>
   );
 }
 
@@ -295,6 +305,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     letterSpacing: -0.2,
   },
+  topRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  themeToggleBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   skipButton: {
     paddingVertical: 6,
     paddingHorizontal: 12,
@@ -305,7 +328,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   skipPlaceholder: {
-    width: 44,
+    width: 34,
   },
   carousel: {
     flex: 1,
@@ -344,7 +367,6 @@ const styles = StyleSheet.create({
   badgeText: {
     fontFamily: 'Montserrat_700Bold',
     fontSize: 11,
-    color: PRIMARY_COLOR,
     letterSpacing: 1.1,
   },
   title: {
@@ -384,14 +406,12 @@ const styles = StyleSheet.create({
     width: 7,
   },
   primaryButton: {
-    backgroundColor: PRIMARY_COLOR,
     height: 54,
     borderRadius: 18,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     gap: 8,
-    shadowColor: PRIMARY_COLOR,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
     shadowRadius: 12,

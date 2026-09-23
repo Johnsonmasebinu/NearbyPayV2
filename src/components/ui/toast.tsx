@@ -5,7 +5,6 @@ import {
     Text,
     TouchableOpacity,
     View,
-    useColorScheme,
 } from 'react-native';
 import Animated, {
     Easing,
@@ -13,6 +12,7 @@ import Animated, {
     SlideInUp,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppTheme } from '@/hooks/theme-provider';
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -111,8 +111,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
 function ToastView({ config, onDismiss }: { config: ToastConfig; onDismiss: () => void }) {
   const insets = useSafeAreaInsets();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const { isDark } = useAppTheme();
   const variant = config.variant ?? 'info';
 
   const palette = isDark ? variantColorsDark[variant] : variantColors[variant];

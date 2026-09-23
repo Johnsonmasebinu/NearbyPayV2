@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -20,8 +20,8 @@ export default function BottomSheet({
   const insets = useSafeAreaInsets();
   const styles = createStyles(colors);
 
-  const backdrop = useRef(new Animated.Value(0)).current;
-  const slide = useRef(new Animated.Value(0)).current;
+  const [backdrop] = useState(() => new Animated.Value(0));
+  const [slide] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (!visible) return;

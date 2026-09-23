@@ -11,7 +11,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { useAppTheme } from '@/hooks/theme-provider';
 import type { ThemeColors } from '@/constants/theme';

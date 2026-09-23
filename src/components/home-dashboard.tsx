@@ -12,7 +12,7 @@ import {
     ViewOffSlashIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     Animated,
     Easing,
@@ -24,12 +24,13 @@ import {
     Text,
     TouchableOpacity,
     View,
-    useColorScheme,
 } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 import { useToast } from '@/components/ui/toast';
 import { getAppTheme, GRADIENT_STOPS, HERO_STOPS } from '@/constants/app-theme';
+import { useAppTheme } from '@/hooks/theme-provider';
+import { useUserProfile } from '@/hooks/user-profile-provider';
 
 type StarSpec = {
   id: number;
@@ -82,7 +83,7 @@ const TRANSACTIONS = [
 ];
 
 function TwinklingStar({ star }: { star: StarSpec }) {
-  const progress = useRef(new Animated.Value(0)).current;
+  const [progress] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     const animation = Animated.sequence([
@@ -140,24 +141,17 @@ function TwinklingStar({ star }: { star: StarSpec }) {
 }
 
 interface HomeDashboardProps {
-  onNavigate: (tab: 'send' | 'receive' | 'history') => void;
+  onNavigate: (tab: 'send' | 'receive' | 'history' | 'profile' | 'more') => void;
 }
 
 // TODO(api): GET /wallet -> balance, GET /transactions?limit=3 -> recent
 export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
   const { show } = useToast();
-  const isDark = useColorScheme() === 'dark';
+  const { profile } = useUserProfile();
+  const { isDark } = useAppTheme();
   const t = getAppTheme(isDark);
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
-  const [starPositions, setStarPositions] = useState<StarSpec[]>([]);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    setTimeout(() => setIsRefreshing(false), 1200);
-  };
-
-  useEffect(() => {
+  const [starPositions] = useState<StarSpec[]>(() => {
     const stars: StarSpec[] = [];
     for (let i = 0; i < 6; i++) {
       stars.push({
@@ -170,12 +164,19 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
         delay: Math.random() * 3,
       });
     }
-    setStarPositions(stars);
-  }, []);
+    return stars;
+  });
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    setTimeout(() => setIsRefreshing(false), 1200);
+  };
 
   const handleActionPress = (action: string) => {
-    if (action === 'Send' || action === 'Receive' || action === 'History') {
-      onNavigate(action.toLowerCase() as 'send' | 'receive' | 'history');
+    const act = action.toLowerCase();
+    if (act === 'send' || act === 'receive' || act === 'history' || act === 'more') {
+      onNavigate(act as 'send' | 'receive' | 'history' | 'more');
       return;
     }
     show({ message: `${action} feature opened.`, variant: 'info' });
@@ -226,9 +227,9 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
               <TouchableOpacity
                 style={styles.avatarButton}
                 activeOpacity={0.8}
-                onPress={() => show({ message: 'Viewing profile details: Chinedu Okafor', variant: 'info' })}>
+                onPress={() => onNavigate('profile' as any)}>
                 <Image
-                  source={{ uri: 'https://cdn.jsdelivr.net/gh/alohe/avatars/png/memo_23.png' }}
+                  source={{ uri: profile.avatar }}
                   style={styles.avatarImage}
                   resizeMode="cover"
                 />

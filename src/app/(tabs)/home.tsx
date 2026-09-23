@@ -18,7 +18,13 @@ export default function HomeTab() {
       <StatusBar style="light" />
       <View style={[styles.container, { backgroundColor: t.pageBg }]}>
         <HomeDashboard
-          onNavigate={(tab) => router.navigate(`/(tabs)/${tab}` as `/(tabs)/${'send' | 'receive' | 'history'}`)}
+          onNavigate={(tab) => {
+            if (tab === 'more') {
+              router.push('/more');
+            } else {
+              router.navigate(`/(tabs)/${tab}` as `/(tabs)/${'send' | 'receive' | 'history' | 'profile'}`);
+            }
+          }}
         />
       </View>
     </SafeAreaView>

@@ -5,7 +5,6 @@ import {
     Download01Icon,
     FilterHorizontalIcon,
     Search01Icon,
-    Sent02Icon,
     ShoppingBag02Icon,
     Tick02Icon,
     UserGroupIcon,
@@ -25,13 +24,13 @@ import {
     TextInput,
     TouchableOpacity,
     View,
-    useColorScheme,
 } from 'react-native';
 
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { useToast } from '@/components/ui/toast';
 import { getAppTheme, GRADIENT_STOPS } from '@/constants/app-theme';
+import { useAppTheme } from '@/hooks/theme-provider';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type TxType = 'sent' | 'received';
@@ -162,7 +161,7 @@ const FILTERS: { id: FilterKey; label: string }[] = [
 
 export default function TransactionHistoryScreen({ onBack }: { onBack: () => void }) {
   const { show } = useToast();
-  const isDark = useColorScheme() === 'dark';
+  const { isDark } = useAppTheme();
   const t = getAppTheme(isDark);
   const [filter, setFilter] = useState<FilterKey>('all');
   const [query, setQuery] = useState('');

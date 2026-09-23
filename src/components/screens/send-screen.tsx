@@ -19,11 +19,11 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  useColorScheme,
 } from 'react-native';
 
 import { useToast } from '@/components/ui/toast';
 import { getAppTheme, GRADIENT_STOPS } from '@/constants/app-theme';
+import { useAppTheme } from '@/hooks/theme-provider';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 const RECIPIENTS = [
@@ -43,7 +43,7 @@ const QUICK_AMOUNTS = [
 export function SendScreen() {
   const router = useRouter();
   const { show } = useToast();
-  const isDark = useColorScheme() === 'dark';
+  const { isDark } = useAppTheme();
   const t = getAppTheme(isDark);
 
   const [tab, setTab] = useState<'bank' | 'nearby'>('bank');
@@ -178,8 +178,14 @@ export function SendScreen() {
         <Text style={[styles.sectionLabel, { color: t.textPrimary }]}>Bank</Text>
         <TouchableOpacity
           style={[styles.bankSelector, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}
-          activeOpacity={0.8}
-          onPress={() => show({ message: 'Bank selector opened', variant: 'info' })}>
+          onPress={() => {
+            const nextBank = selectedBank ? null : 'Access Bank';
+            setSelectedBank(nextBank);
+            show({
+              message: nextBank ? 'Selected Access Bank' : 'Bank cleared',
+              variant: 'info',
+            });
+          }}>
           <View style={styles.bankLeft}>
             <View style={[styles.bankIconCircle, { backgroundColor: t.brandTint }]}>
               <HugeiconsIcon icon={Building01Icon} size={18} color={t.brand} />
