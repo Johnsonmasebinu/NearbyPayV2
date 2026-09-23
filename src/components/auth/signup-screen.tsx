@@ -1,4 +1,5 @@
 import {
+  ArrowLeft01Icon,
   Camera01Icon,
   LockPasswordIcon,
   Mail01Icon,
@@ -53,6 +54,7 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
   const [confirmPassword, setConfirmPassword] = useState('');
   const [chosenAvatar, setChosenAvatar] = useState(profile.avatar || AVAILABLE_AVATARS[0]);
   const [avatarSheetVisible, setAvatarSheetVisible] = useState(false);
+  const [step, setStep] = useState<1 | 2>(1);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -90,12 +92,9 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
     }
   };
 
-  const handleSignUp = async () => {
-    if (isSubmitting) return;
-
+  const handleContinue = () => {
     const trimmedName = fullName.trim();
     const cleanUsername = username.trim().toLowerCase().replace(/^[@$]/, '');
-    const cleanEmail = email.trim();
 
     if (!trimmedName || trimmedName.length < 2) {
       show({ message: 'Please enter your full name', variant: 'error' });
@@ -106,6 +105,32 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
       return;
     }
     if (!/^[a-z0-9_]+$/.test(cleanUsername)) {
+      show({ message: 'Username can only contain letters, numbers, and underscores', variant: 'error' });
+      return;
+    }
+
+    setStep(2);
+  };
+
+  const handleSignUp = async () => {
+    if (isSubmitting) return;
+
+    const trimmedName = fullName.trim();
+    const cleanUsername = username.trim().toLowerCase().replace(/^[@$]/, '');
+    const cleanEmail = email.trim();
+
+    if (!trimmedName || trimmedName.length < 2) {
+      setStep(1);
+      show({ message: 'Please enter your full name', variant: 'error' });
+      return;
+    }
+    if (!cleanUsername || cleanUsername.length < 3) {
+      setStep(1);
+      show({ message: 'Username must be at least 3 characters', variant: 'error' });
+      return;
+    }
+    if (!/^[a-z0-9_]+$/.test(cleanUsername)) {
+      setStep(1);
       show({ message: 'Username can only contain letters, numbers, and underscores', variant: 'error' });
       return;
     }
@@ -183,239 +208,303 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                 </View>
 
                 <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
-                  <ThemedText style={[styles.title, { color: textPrimary }]}>Create your account</ThemedText>
-                  <Text style={[styles.subtitle, { color: textSecondary }]}>
-                    Start sending and receiving money securely in seconds.
-                  </Text>
-
-                  {/* Profile Avatar Card - Tapping opens Bottom Sheet */}
-                  <TouchableOpacity
-                    style={[styles.avatarSelectorCard, { backgroundColor: inputBg, borderColor: inputBorder }]}
-                    activeOpacity={0.8}
-                    onPress={() => setAvatarSheetVisible(true)}>
-                    <View style={styles.avatarCardLeft}>
-                      <View style={[styles.avatarPreviewRing, { borderColor: '#2B20F0' }]}>
-                        <ExpoImage
-                          source={{ uri: chosenAvatar }}
-                          style={styles.avatarPreviewImg}
-                          contentFit="contain"
-                          cachePolicy="memory-disk"
+                  {/* Step Progress & Navigation Header */}
+                  <View style={styles.stepHeaderRow}>
+                    <View style={styles.stepProgressContainer}>
+                      <View style={styles.stepTrack}>
+                        <View style={[styles.stepBar, { backgroundColor: '#2B20F0' }]} />
+                        <View
+                          style={[
+                            styles.stepBar,
+                            { backgroundColor: step === 2 ? '#2B20F0' : isDark ? '#1E293B' : '#E2E8F0' },
+                          ]}
                         />
-                        <View style={styles.cameraIconBadge}>
-                          <HugeiconsIcon icon={Camera01Icon} size={11} color="#FFFFFF" strokeWidth={2} />
+                      </View>
+                      <Text style={[styles.stepBadgeText, { color: textSecondary }]}>
+                        STEP {step} OF 2 • {step === 1 ? 'Profile & Cashtag' : 'Security & Login'}
+                      </Text>
+                    </View>
+
+                    {step === 2 && (
+                      <TouchableOpacity
+                        onPress={() => setStep(1)}
+                        hitSlop={8}
+                        style={[styles.headerBackBtn, { backgroundColor: inputBg, borderColor: inputBorder }]}
+                        accessibilityLabel="Go back to step 1">
+                        <HugeiconsIcon icon={ArrowLeft01Icon} size={15} color={textPrimary} />
+                        <Text style={[styles.headerBackText, { color: textPrimary }]}>Back</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
+                  {step === 1 ? (
+                    <>
+                      <ThemedText style={[styles.title, { color: textPrimary }]}>Create your account</ThemedText>
+                      <Text style={[styles.subtitle, { color: textSecondary }]}>
+                        Choose your profile avatar and unique NearbyPay Cashtag.
+                      </Text>
+
+                      {/* Profile Avatar Card - Tapping opens Bottom Sheet */}
+                      <TouchableOpacity
+                        style={[styles.avatarSelectorCard, { backgroundColor: inputBg, borderColor: inputBorder }]}
+                        activeOpacity={0.8}
+                        onPress={() => setAvatarSheetVisible(true)}>
+                        <View style={styles.avatarCardLeft}>
+                          <View style={[styles.avatarPreviewRing, { borderColor: '#2B20F0' }]}>
+                            <ExpoImage
+                              source={{ uri: chosenAvatar }}
+                              style={styles.avatarPreviewImg}
+                              contentFit="contain"
+                              cachePolicy="memory-disk"
+                            />
+                            <View style={styles.cameraIconBadge}>
+                              <HugeiconsIcon icon={Camera01Icon} size={11} color="#FFFFFF" strokeWidth={2} />
+                            </View>
+                          </View>
+                          <View style={styles.avatarCardInfo}>
+                            <Text style={[styles.avatarCardTitle, { color: textPrimary }]}>Profile Avatar</Text>
+                            <Text style={[styles.avatarCardSubtitle, { color: textSecondary }]}>
+                              Tap to select memo or upload photo
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={styles.changePill}>
+                          <Text style={styles.changePillText}>Change</Text>
+                        </View>
+                      </TouchableOpacity>
+
+                      <View style={styles.fieldGroup}>
+                        <Text style={[styles.label, { color: textPrimary }]}>Full name</Text>
+                        <View
+                          style={[
+                            styles.inputWrap,
+                            {
+                              backgroundColor: inputBg,
+                              borderColor: focusedField === 'name' ? '#2B20F0' : inputBorder,
+                            },
+                          ]}>
+                          <HugeiconsIcon icon={UserIcon} size={18} color={iconColor} strokeWidth={1.8} />
+                          <TextInput
+                            value={fullName}
+                            onChangeText={handleFullNameChange}
+                            placeholder="Alex Morgan"
+                            textContentType="name"
+                            autoComplete="name"
+                            returnKeyType="next"
+                            placeholderTextColor={iconColor}
+                            onFocus={() => setFocusedField('name')}
+                            onBlur={() => setFocusedField(null)}
+                            style={[styles.input, { color: textPrimary }]}
+                          />
                         </View>
                       </View>
-                      <View style={styles.avatarCardInfo}>
-                        <Text style={[styles.avatarCardTitle, { color: textPrimary }]}>Profile Avatar</Text>
-                        <Text style={[styles.avatarCardSubtitle, { color: textSecondary }]}>
-                          Tap to select memo or upload photo
-                        </Text>
+
+                      <View style={styles.fieldGroup}>
+                        <View style={styles.labelRow}>
+                          <Text style={[styles.label, { color: textPrimary }]}>NearbyPay Cashtag</Text>
+                          <TouchableOpacity
+                            onPress={() => generateSystemUsername(fullName)}
+                            disabled={isGeneratingUsername}
+                            hitSlop={6}
+                            style={styles.shuffleRow}>
+                            <HugeiconsIcon icon={SparklesIcon} size={13} color="#2B20F0" />
+                            <Text style={styles.shuffleText}>Shuffle</Text>
+                          </TouchableOpacity>
+                        </View>
+                        <View
+                          style={[
+                            styles.inputWrap,
+                            {
+                              backgroundColor: inputBg,
+                              borderColor: focusedField === 'username' ? '#2B20F0' : inputBorder,
+                            },
+                          ]}>
+                          <Text style={styles.tagPrefix}>@</Text>
+                          <TextInput
+                            value={username}
+                            onChangeText={(val) => setUsername(val.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                            placeholder="alexmorgan24"
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            textContentType="username"
+                            autoComplete="username"
+                            returnKeyType="done"
+                            onSubmitEditing={handleContinue}
+                            placeholderTextColor={iconColor}
+                            onFocus={() => setFocusedField('username')}
+                            onBlur={() => setFocusedField(null)}
+                            style={[styles.input, { color: textPrimary }]}
+                          />
+                          <TouchableOpacity
+                            onPress={() => generateSystemUsername(fullName)}
+                            disabled={isGeneratingUsername}
+                            hitSlop={8}
+                            style={styles.inputActionIcon}>
+                            {isGeneratingUsername ? (
+                              <ActivityIndicator size="small" color="#2B20F0" />
+                            ) : (
+                              <HugeiconsIcon icon={SparklesIcon} size={18} color="#2B20F0" />
+                            )}
+                          </TouchableOpacity>
+                        </View>
+                        <View style={styles.usernameStatusRow}>
+                          <View
+                            style={[
+                              styles.statusBadge,
+                              { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5' },
+                            ]}>
+                            <HugeiconsIcon icon={Tick02Icon} size={11} color="#10B981" strokeWidth={3} />
+                            <Text style={[styles.statusBadgeText, { color: '#10B981' }]}>
+                              System-Generated & Unique
+                            </Text>
+                          </View>
+                          <Text style={[styles.usernameHint, { color: textSecondary }]}>Nearby cashtag</Text>
+                        </View>
                       </View>
-                    </View>
-                    <View style={styles.changePill}>
-                      <Text style={styles.changePillText}>Change</Text>
-                    </View>
-                  </TouchableOpacity>
 
-                  <View style={styles.fieldGroup}>
-                    <Text style={[styles.label, { color: textPrimary }]}>Full name</Text>
-                    <View
-                      style={[
-                        styles.inputWrap,
-                        {
-                          backgroundColor: inputBg,
-                          borderColor: focusedField === 'name' ? '#2B20F0' : inputBorder,
-                        },
-                      ]}>
-                      <HugeiconsIcon icon={UserIcon} size={18} color={iconColor} strokeWidth={1.8} />
-                      <TextInput
-                        value={fullName}
-                        onChangeText={handleFullNameChange}
-                        placeholder="Alex Morgan"
-                        textContentType="name"
-                        autoComplete="name"
-                        returnKeyType="next"
-                        placeholderTextColor={iconColor}
-                        onFocus={() => setFocusedField('name')}
-                        onBlur={() => setFocusedField(null)}
-                        style={[styles.input, { color: textPrimary }]}
-                      />
-                    </View>
-                  </View>
-
-                  <View style={styles.fieldGroup}>
-                    <View style={styles.labelRow}>
-                      <Text style={[styles.label, { color: textPrimary }]}>NearbyPay Cashtag</Text>
+                      {/* Continue Button */}
                       <TouchableOpacity
-                        onPress={() => generateSystemUsername(fullName)}
-                        disabled={isGeneratingUsername}
-                        hitSlop={6}
-                        style={styles.shuffleRow}>
-                        <HugeiconsIcon icon={SparklesIcon} size={13} color="#2B20F0" />
-                        <Text style={styles.shuffleText}>Shuffle</Text>
+                        style={styles.primaryButton}
+                        onPress={handleContinue}
+                        activeOpacity={0.88}>
+                        <Text style={styles.primaryButtonText}>Continue</Text>
                       </TouchableOpacity>
-                    </View>
-                    <View
-                      style={[
-                        styles.inputWrap,
-                        {
-                          backgroundColor: inputBg,
-                          borderColor: focusedField === 'username' ? '#2B20F0' : inputBorder,
-                        },
-                      ]}>
-                      <Text style={styles.tagPrefix}>@</Text>
-                      <TextInput
-                        value={username}
-                        onChangeText={(val) => setUsername(val.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                        placeholder="alexmorgan"
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        textContentType="username"
-                        autoComplete="username"
-                        returnKeyType="next"
-                        placeholderTextColor={iconColor}
-                        onFocus={() => setFocusedField('username')}
-                        onBlur={() => setFocusedField(null)}
-                        style={[styles.input, { color: textPrimary }]}
-                      />
+                    </>
+                  ) : (
+                    <>
+                      <ThemedText style={[styles.title, { color: textPrimary }]}>Secure your account</ThemedText>
+                      <Text style={[styles.subtitle, { color: textSecondary }]}>
+                        Enter your email and create a password for @{username || 'account'}.
+                      </Text>
+
+                      <View style={styles.fieldGroup}>
+                        <Text style={[styles.label, { color: textPrimary }]}>Email address</Text>
+                        <View
+                          style={[
+                            styles.inputWrap,
+                            {
+                              backgroundColor: inputBg,
+                              borderColor: focusedField === 'email' ? '#2B20F0' : inputBorder,
+                            },
+                          ]}>
+                          <HugeiconsIcon icon={Mail01Icon} size={18} color={iconColor} strokeWidth={1.8} />
+                          <TextInput
+                            value={email}
+                            onChangeText={setEmail}
+                            placeholder="name@email.com"
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            keyboardType="email-address"
+                            textContentType="emailAddress"
+                            autoComplete="email"
+                            returnKeyType="next"
+                            placeholderTextColor={iconColor}
+                            onFocus={() => setFocusedField('email')}
+                            onBlur={() => setFocusedField(null)}
+                            style={[styles.input, { color: textPrimary }]}
+                          />
+                        </View>
+                      </View>
+
+                      <View style={styles.fieldGroup}>
+                        <Text style={[styles.label, { color: textPrimary }]}>Password</Text>
+                        <View
+                          style={[
+                            styles.inputWrap,
+                            {
+                              backgroundColor: inputBg,
+                              borderColor: focusedField === 'password' ? '#2B20F0' : inputBorder,
+                            },
+                          ]}>
+                          <HugeiconsIcon icon={LockPasswordIcon} size={18} color={iconColor} strokeWidth={1.8} />
+                          <TextInput
+                            value={password}
+                            onChangeText={setPassword}
+                            placeholder="Create a password (min 6 chars)"
+                            secureTextEntry={!showPassword}
+                            textContentType="newPassword"
+                            autoComplete="password-new"
+                            returnKeyType="next"
+                            placeholderTextColor={iconColor}
+                            onFocus={() => setFocusedField('password')}
+                            onBlur={() => setFocusedField(null)}
+                            style={[styles.input, { color: textPrimary }]}
+                          />
+                          <TouchableOpacity
+                            onPress={() => setShowPassword((v) => !v)}
+                            hitSlop={10}
+                            accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}>
+                            <HugeiconsIcon
+                              icon={showPassword ? ViewOffSlashIcon : ViewIcon}
+                              size={18}
+                              color={iconColor}
+                              strokeWidth={1.8}
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+
+                      <View style={styles.fieldGroup}>
+                        <Text style={[styles.label, { color: textPrimary }]}>Confirm password</Text>
+                        <View
+                          style={[
+                            styles.inputWrap,
+                            {
+                              backgroundColor: inputBg,
+                              borderColor: focusedField === 'confirm' ? '#2B20F0' : inputBorder,
+                            },
+                          ]}>
+                          <HugeiconsIcon icon={LockPasswordIcon} size={18} color={iconColor} strokeWidth={1.8} />
+                          <TextInput
+                            value={confirmPassword}
+                            onChangeText={setConfirmPassword}
+                            placeholder="Repeat your password"
+                            secureTextEntry={!showConfirm}
+                            textContentType="newPassword"
+                            autoComplete="password-new"
+                            returnKeyType="go"
+                            onSubmitEditing={handleSignUp}
+                            placeholderTextColor={iconColor}
+                            onFocus={() => setFocusedField('confirm')}
+                            onBlur={() => setFocusedField(null)}
+                            style={[styles.input, { color: textPrimary }]}
+                          />
+                          <TouchableOpacity
+                            onPress={() => setShowConfirm((v) => !v)}
+                            hitSlop={10}
+                            accessibilityLabel={showConfirm ? 'Hide password' : 'Show password'}>
+                            <HugeiconsIcon
+                              icon={showConfirm ? ViewOffSlashIcon : ViewIcon}
+                              size={18}
+                              color={iconColor}
+                              strokeWidth={1.8}
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+
                       <TouchableOpacity
-                        onPress={() => generateSystemUsername(fullName)}
-                        disabled={isGeneratingUsername}
-                        hitSlop={8}
-                        style={styles.inputActionIcon}>
-                        {isGeneratingUsername ? (
-                          <ActivityIndicator size="small" color="#2B20F0" />
+                        style={[styles.primaryButton, isSubmitting && { opacity: 0.7 }]}
+                        onPress={handleSignUp}
+                        disabled={isSubmitting}
+                        activeOpacity={0.88}>
+                        {isSubmitting ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
                         ) : (
-                          <HugeiconsIcon icon={SparklesIcon} size={18} color="#2B20F0" />
+                          <Text style={styles.primaryButtonText}>Create account</Text>
                         )}
                       </TouchableOpacity>
-                    </View>
-                    <View style={styles.usernameStatusRow}>
-                      <View style={[styles.statusBadge, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5' }]}>
-                        <HugeiconsIcon icon={Tick02Icon} size={11} color="#10B981" strokeWidth={3} />
-                        <Text style={[styles.statusBadgeText, { color: '#10B981' }]}>System-Generated & Unique</Text>
-                      </View>
-                      <Text style={[styles.usernameHint, { color: textSecondary }]}>Nearby cashtag</Text>
-                    </View>
-                  </View>
 
-                  <View style={styles.fieldGroup}>
-                    <Text style={[styles.label, { color: textPrimary }]}>Email</Text>
-                    <View
-                      style={[
-                        styles.inputWrap,
-                        {
-                          backgroundColor: inputBg,
-                          borderColor: focusedField === 'email' ? '#2B20F0' : inputBorder,
-                        },
-                      ]}>
-                      <HugeiconsIcon icon={Mail01Icon} size={18} color={iconColor} strokeWidth={1.8} />
-                      <TextInput
-                        value={email}
-                        onChangeText={setEmail}
-                        placeholder="name@email.com"
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        keyboardType="email-address"
-                        textContentType="emailAddress"
-                        autoComplete="email"
-                        returnKeyType="next"
-                        placeholderTextColor={iconColor}
-                        onFocus={() => setFocusedField('email')}
-                        onBlur={() => setFocusedField(null)}
-                        style={[styles.input, { color: textPrimary }]}
-                      />
-                    </View>
-                  </View>
-
-                  <View style={styles.fieldGroup}>
-                    <Text style={[styles.label, { color: textPrimary }]}>Password</Text>
-                    <View
-                      style={[
-                        styles.inputWrap,
-                        {
-                          backgroundColor: inputBg,
-                          borderColor: focusedField === 'password' ? '#2B20F0' : inputBorder,
-                        },
-                      ]}>
-                      <HugeiconsIcon icon={LockPasswordIcon} size={18} color={iconColor} strokeWidth={1.8} />
-                      <TextInput
-                        value={password}
-                        onChangeText={setPassword}
-                        placeholder="Create a password"
-                        secureTextEntry={!showPassword}
-                        textContentType="newPassword"
-                        autoComplete="password-new"
-                        returnKeyType="next"
-                        placeholderTextColor={iconColor}
-                        onFocus={() => setFocusedField('password')}
-                        onBlur={() => setFocusedField(null)}
-                        style={[styles.input, { color: textPrimary }]}
-                      />
                       <TouchableOpacity
-                        onPress={() => setShowPassword((v) => !v)}
-                        hitSlop={10}
-                        accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}>
-                        <HugeiconsIcon
-                          icon={showPassword ? ViewOffSlashIcon : ViewIcon}
-                          size={18}
-                          color={iconColor}
-                          strokeWidth={1.8}
-                        />
+                        style={[styles.secondaryBackButton, { borderColor: cardBorder }]}
+                        onPress={() => setStep(1)}
+                        disabled={isSubmitting}
+                        activeOpacity={0.8}>
+                        <HugeiconsIcon icon={ArrowLeft01Icon} size={16} color={textPrimary} />
+                        <Text style={[styles.secondaryBackButtonText, { color: textPrimary }]}>Go back</Text>
                       </TouchableOpacity>
-                    </View>
-                  </View>
-
-                  <View style={styles.fieldGroup}>
-                    <Text style={[styles.label, { color: textPrimary }]}>Confirm password</Text>
-                    <View
-                      style={[
-                        styles.inputWrap,
-                        {
-                          backgroundColor: inputBg,
-                          borderColor: focusedField === 'confirm' ? '#2B20F0' : inputBorder,
-                        },
-                      ]}>
-                      <HugeiconsIcon icon={LockPasswordIcon} size={18} color={iconColor} strokeWidth={1.8} />
-                      <TextInput
-                        value={confirmPassword}
-                        onChangeText={setConfirmPassword}
-                        placeholder="Repeat your password"
-                        secureTextEntry={!showConfirm}
-                        textContentType="newPassword"
-                        autoComplete="password-new"
-                        returnKeyType="go"
-                        onSubmitEditing={handleSignUp}
-                        placeholderTextColor={iconColor}
-                        onFocus={() => setFocusedField('confirm')}
-                        onBlur={() => setFocusedField(null)}
-                        style={[styles.input, { color: textPrimary }]}
-                      />
-                      <TouchableOpacity
-                        onPress={() => setShowConfirm((v) => !v)}
-                        hitSlop={10}
-                        accessibilityLabel={showConfirm ? 'Hide password' : 'Show password'}>
-                        <HugeiconsIcon
-                          icon={showConfirm ? ViewOffSlashIcon : ViewIcon}
-                          size={18}
-                          color={iconColor}
-                          strokeWidth={1.8}
-                        />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-
-                  <TouchableOpacity
-                    style={[styles.primaryButton, isSubmitting && { opacity: 0.7 }]}
-                    onPress={handleSignUp}
-                    disabled={isSubmitting}
-                    activeOpacity={0.88}>
-                    {isSubmitting ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                      <Text style={styles.primaryButtonText}>Create account</Text>
-                    )}
-                  </TouchableOpacity>
+                    </>
+                  )}
 
                   <View style={styles.dividerRow}>
                     <View style={[styles.dividerLine, { backgroundColor: cardBorder }]} />
@@ -717,5 +806,59 @@ const styles = StyleSheet.create({
     color: '#2B20F0',
     fontFamily: 'Montserrat_600SemiBold',
     fontSize: 12,
+  },
+  stepHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 2,
+  },
+  stepProgressContainer: {
+    flex: 1,
+    gap: 6,
+  },
+  stepTrack: {
+    flexDirection: 'row',
+    gap: 6,
+    height: 4,
+    width: '100%',
+  },
+  stepBar: {
+    flex: 1,
+    borderRadius: 2,
+  },
+  stepBadgeText: {
+    fontFamily: 'Montserrat_600SemiBold',
+    fontSize: 10.5,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  headerBackBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 100,
+    borderWidth: 1,
+    marginLeft: 12,
+  },
+  headerBackText: {
+    fontFamily: 'Montserrat_600SemiBold',
+    fontSize: 12,
+  },
+  secondaryBackButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: -4,
+  },
+  secondaryBackButtonText: {
+    fontFamily: 'Montserrat_600SemiBold',
+    fontSize: 14,
   },
 });

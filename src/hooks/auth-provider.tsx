@@ -156,19 +156,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cleanSeed = (baseSeed || '')
       .trim()
       .toLowerCase()
-      .replace(/[^a-z0-9]/g, '')
-      .slice(0, 10);
+      .replace(/[^a-z0-9]/g, '');
+
+    // Trim base seed to at most 10 chars so numerals fit comfortably within 20 chars
+    cleanSeed = cleanSeed.slice(0, 10);
 
     if (!cleanSeed || cleanSeed.length < 2) {
       const prefixes = ['pay', 'tag', 'user', 'near', 'cash'];
       const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-      cleanSeed = `${prefix}${Math.floor(100 + Math.random() * 900)}`;
+      cleanSeed = prefix;
     }
 
+    // Always append numerals (2-4 digits) to ensure usernames always have numbers
+    const num2Digit = Math.floor(10 + Math.random() * 90);
+    const num3Digit = Math.floor(100 + Math.random() * 900);
+    const num4Digit = Math.floor(1000 + Math.random() * 9000);
+
     const candidateSuffixes = [
-      '',
-      `_${Math.floor(100 + Math.random() * 900)}`,
-      `_${Math.floor(1000 + Math.random() * 9000)}`,
+      `${num2Digit}`,
+      `${num3Digit}`,
+      `_${num2Digit}`,
+      `${num4Digit}`,
+      `_${num3Digit}`,
     ];
 
     for (const suffix of candidateSuffixes) {
@@ -184,7 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    return `${cleanSeed}_${Date.now().toString().slice(-4)}`;
+    return `${cleanSeed}${Math.floor(1000 + Math.random() * 9000)}`.slice(0, 20);
   }, []);
 
   // Sign up
