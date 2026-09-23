@@ -24,9 +24,9 @@ import {
   Sun03Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
+import { Image } from 'expo-image';
 import { useState } from 'react';
 import {
-  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -155,7 +155,12 @@ export function ProfileScreen() {
             onPress={() => setAvatarPickerVisible(true)}
             accessibilityRole="button"
             accessibilityLabel="Change avatar image">
-            <Image source={{ uri: profile.avatar }} style={styles.avatarImg} />
+            <Image
+              source={{ uri: profile.avatar }}
+              style={styles.avatarImg}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+            />
             <View style={[styles.cameraBadge, { backgroundColor: t.brand, borderColor: t.cardBg }]}>
               <HugeiconsIcon icon={Camera01Icon} size={13} color="#FFFFFF" />
             </View>
@@ -785,7 +790,7 @@ export function ProfileScreen() {
                 <Image
                   source={require('@/assets/images/logo/logo.png')}
                   style={styles.aboutLogoImg}
-                  resizeMode="contain"
+                  contentFit="contain"
                 />
               </View>
               <Text style={[styles.aboutAppName, { color: t.textPrimary }]}>NearbyPay v2.4.0</Text>

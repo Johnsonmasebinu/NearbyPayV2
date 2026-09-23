@@ -13,10 +13,10 @@ import {
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useEffect, useState } from 'react';
+import { Image } from 'expo-image';
 import {
     Animated,
     Easing,
-    Image,
     Platform,
     RefreshControl,
     ScrollView,
@@ -231,7 +231,8 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
                 <Image
                   source={{ uri: profile.avatar }}
                   style={styles.avatarImage}
-                  resizeMode="cover"
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
                 />
               </TouchableOpacity>
             </View>

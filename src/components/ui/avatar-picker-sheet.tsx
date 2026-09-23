@@ -1,8 +1,8 @@
 import { Cancel01Icon, Tick02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useState } from 'react';
+import { Image } from 'expo-image';
 import {
-  Image,
   Modal,
   Platform,
   ScrollView,
@@ -86,7 +86,12 @@ export function AvatarPickerSheet({
           {/* Centered Large Preview */}
           <View style={styles.previewContainer}>
             <View style={[styles.previewRing, { borderColor: t.brand, backgroundColor: t.brandTint }]}>
-              <Image source={{ uri: selected }} style={styles.previewImage} resizeMode="contain" />
+              <Image
+                source={{ uri: selected }}
+                style={styles.previewImage}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+              />
             </View>
             <Text style={[styles.previewHint, { color: t.textSecondary }]}>
               Tap any avatar below to preview
@@ -113,7 +118,12 @@ export function AvatarPickerSheet({
                     ]}
                     activeOpacity={0.75}
                     onPress={() => setSelected(url)}>
-                    <Image source={{ uri: url }} style={styles.avatarImg} resizeMode="contain" />
+                    <Image
+                      source={{ uri: url }}
+                      style={styles.avatarImg}
+                      contentFit="contain"
+                      cachePolicy="memory-disk"
+                    />
 
                     {isSelected && (
                       <View style={[styles.selectedCheck, { backgroundColor: t.brand, borderColor: t.cardBg }]}>
