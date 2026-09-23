@@ -29,6 +29,7 @@ export type UserProfile = {
   avatar: string;
   accountNumber: string;
   bankName: string;
+  createdAt: string;
 };
 
 type UserProfileContextType = {
@@ -50,6 +51,7 @@ const DEFAULT_PROFILE: UserProfile = {
   avatar: AVAILABLE_AVATARS[0],
   accountNumber: '9012345678',
   bankName: 'Providus Bank • Virtual Account',
+  createdAt: '',
 };
 
 const UserProfileContext = createContext<UserProfileContextType | null>(null);
@@ -91,6 +93,7 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
         avatar: authProfile.avatar,
         accountNumber: authProfile.accountNumber,
         bankName: authProfile.bankName,
+        createdAt: authProfile.createdAt,
       }
     : localProfile;
 

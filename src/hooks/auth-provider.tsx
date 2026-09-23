@@ -14,6 +14,7 @@ export type UserProfile = {
   avatar: string;
   accountNumber: string;
   bankName: string;
+  createdAt: string;
   hasPin: boolean;
 };
 
@@ -26,6 +27,12 @@ type SignUpParams = {
   phone?: string;
 };
 
+export type SignUpResult = {
+  user: User | null;
+  session: Session | null;
+  needsEmailVerification: boolean;
+};
+
 type AuthContextType = {
   session: Session | null;
   user: User | null;
@@ -33,9 +40,10 @@ type AuthContextType = {
   isLoading: boolean;
   hasPin: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (params: SignUpParams) => Promise<void>;
+  signUp: (params: SignUpParams) => Promise<SignUpResult>;
   signOut: () => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
+  resendVerificationEmail: (email: string) => Promise<void>;
   setupPin: (pin: string) => Promise<void>;
   verifyPin: (pin: string) => Promise<boolean>;
   changePin: (oldPin: string, newPin: string) => Promise<void>;
@@ -82,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           avatar: data.avatar_url || DEFAULT_AVATAR,
           accountNumber: data.account_number || '9012345678',
           bankName: data.bank_name || 'Providus Bank • Virtual Account',
+          createdAt: data.created_at || currentUser.created_at,
           hasPin: Boolean(data.pin_hash),
         };
         setProfile(userProf);
@@ -246,6 +255,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       await fetchProfile(data.user);
     }
+
+    const needsEmailVerification = !data.session;
+    return {
+      user: data.user,
+      session: data.session,
+      needsEmailVerification,
+    };
+  };
+
+  // Resend verification email
+  const resendVerificationEmail = async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email.trim().toLowerCase(),
+    });
+    if (error) {
+      throw new Error(error.message);
+    }
   };
 
   // Sign out
@@ -408,6 +435,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signUp,
         signOut,
         sendPasswordReset,
+        resendVerificationEmail,
         setupPin,
         verifyPin,
         changePin,

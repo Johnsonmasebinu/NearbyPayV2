@@ -31,6 +31,13 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { useToast } from '@/components/ui/toast';
 import { getAppTheme, GRADIENT_STOPS } from '@/constants/app-theme';
 import { useAppTheme } from '@/hooks/theme-provider';
+import { useUserProfile } from '@/hooks/user-profile-provider';
+import {
+  formatTransactionDate,
+  isNewAccount,
+  NEW_ACCOUNT_DEPOSIT_AMOUNT,
+  NEW_ACCOUNT_DEPOSIT_TITLE,
+} from '@/lib/welcome-transaction';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type TxType = 'sent' | 'received';
@@ -161,16 +168,38 @@ const FILTERS: { id: FilterKey; label: string }[] = [
 
 export default function TransactionHistoryScreen({ onBack }: { onBack: () => void }) {
   const { show } = useToast();
+  const { profile } = useUserProfile();
   const { isDark } = useAppTheme();
   const t = getAppTheme(isDark);
   const [filter, setFilter] = useState<FilterKey>('all');
   const [query, setQuery] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedTx, setSelectedTx] = useState<HistoryTx | null>(null);
+  const historyTransactions = isNewAccount(profile.createdAt)
+    ? [
+        {
+          id: 'new-account-deposit',
+          title: NEW_ACCOUNT_DEPOSIT_TITLE,
+          category: 'Deposit',
+          date: formatTransactionDate(profile.createdAt),
+          dayGroup: 'Today',
+          amount: `+ ₦${NEW_ACCOUNT_DEPOSIT_AMOUNT.toLocaleString()}`,
+          numeric: NEW_ACCOUNT_DEPOSIT_AMOUNT,
+          type: 'received' as const,
+          icon: Download01Icon,
+          iconColor: '#16A34A',
+          amountColor: '#16A34A',
+          status: 'Completed' as const,
+          reference: 'NPP-HACKATHON-DEPOSIT',
+          channel: 'NearbyPay New Account Deposit',
+        },
+        ...HISTORY_TX,
+      ]
+    : HISTORY_TX;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return HISTORY_TX.filter((tx) => {
+    return historyTransactions.filter((tx) => {
       const matchesFilter = filter === 'all' || tx.type === filter;
       const matchesQuery =
         q.length === 0 ||
@@ -178,7 +207,7 @@ export default function TransactionHistoryScreen({ onBack }: { onBack: () => voi
         tx.category.toLowerCase().includes(q);
       return matchesFilter && matchesQuery;
     });
-  }, [filter, query]);
+  }, [filter, historyTransactions, query]);
 
   const groups = useMemo(() => {
     const map = new Map<string, HistoryTx[]>();

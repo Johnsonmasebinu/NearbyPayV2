@@ -31,6 +31,12 @@ import { useToast } from '@/components/ui/toast';
 import { getAppTheme, GRADIENT_STOPS, HERO_STOPS } from '@/constants/app-theme';
 import { useAppTheme } from '@/hooks/theme-provider';
 import { useUserProfile } from '@/hooks/user-profile-provider';
+import {
+  formatTransactionDate,
+  isNewAccount,
+  NEW_ACCOUNT_DEPOSIT_AMOUNT,
+  NEW_ACCOUNT_DEPOSIT_TITLE,
+} from '@/lib/welcome-transaction';
 
 type StarSpec = {
   id: number;
@@ -183,6 +189,21 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
   };
 
   const txTint = { sent: t.brandTint, received: t.successTint } as const;
+  const recentTransactions = isNewAccount(profile.createdAt)
+    ? [
+        {
+          id: 'new-account-deposit',
+          title: NEW_ACCOUNT_DEPOSIT_TITLE,
+          date: formatTransactionDate(profile.createdAt),
+          amount: `+ ₦${NEW_ACCOUNT_DEPOSIT_AMOUNT.toLocaleString()}`,
+          type: 'received',
+          icon: Download01Icon,
+          iconColor: '#16A34A',
+          amountColor: '#16A34A',
+        },
+        ...TRANSACTIONS,
+      ]
+    : TRANSACTIONS;
 
   return (
     <ScrollView
@@ -241,7 +262,7 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
           <View style={styles.greetingSection}>
             <Text style={styles.greetingSub}>Good morning,</Text>
             <View style={styles.nameRow}>
-              <Text style={styles.userName}>Chinedu Okafor</Text>
+              <Text style={styles.userName}>{profile.name}</Text>
               <View style={styles.verifiedBadge}>
                 <HugeiconsIcon icon={Tick02Icon} size={10} color="#FFFFFF" strokeWidth={2.8} />
               </View>
@@ -347,13 +368,13 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
           </TouchableOpacity>
         </View>
         <View style={styles.transactionsList}>
-          {TRANSACTIONS.map((tx, index) => (
+          {recentTransactions.map((tx, index) => (
             <TouchableOpacity
               key={tx.id}
               style={[
                 styles.transactionItem,
                 { borderBottomColor: t.divider },
-                index === TRANSACTIONS.length - 1 && styles.lastTransactionItem,
+                index === recentTransactions.length - 1 && styles.lastTransactionItem,
               ]}
               activeOpacity={0.7}
               onPress={() => show({ message: `Transaction details: ${tx.title}`, variant: 'info' })}>
