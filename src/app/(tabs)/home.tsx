@@ -1,14 +1,15 @@
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View, useColorScheme } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { HomeDashboard } from '@/components/home-dashboard';
 import { getAppTheme, HERO_STOPS } from '@/constants/app-theme';
+import { useAppTheme } from '@/hooks/theme-provider';
 
 export default function HomeTab() {
   const router = useRouter();
-  const isDark = useColorScheme() === 'dark';
+  const { isDark } = useAppTheme();
   const t = getAppTheme(isDark);
 
   return (

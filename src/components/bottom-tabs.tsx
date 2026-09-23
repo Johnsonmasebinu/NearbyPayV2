@@ -6,11 +6,12 @@ import {
     UserIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
-import { Platform, StyleSheet, Text, TouchableOpacity, View, useColorScheme } from 'react-native';
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { getAppTheme, GRADIENT_STOPS } from '@/constants/app-theme';
+import { useAppTheme } from '@/hooks/theme-provider';
 
 export type MainTabKey = 'home' | 'receive' | 'send' | 'history' | 'profile';
 
@@ -31,7 +32,7 @@ interface BottomTabsProps {
 
 export function BottomTabs({ active, onPress }: BottomTabsProps) {
   const insets = useSafeAreaInsets();
-  const isDark = useColorScheme() === 'dark';
+  const { isDark } = useAppTheme();
   const t = getAppTheme(isDark);
 
   const renderItem = ({ id, label, icon }: { id: MainTabKey; label: string; icon: typeof Home01Icon }) => {

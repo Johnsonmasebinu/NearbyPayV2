@@ -1,12 +1,13 @@
 import { StatusBar } from 'expo-status-bar';
-import { ScrollView, StyleSheet, View, useColorScheme } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProfileScreen } from '@/components/screens/profile-screen';
 import { getAppTheme } from '@/constants/app-theme';
+import { useAppTheme } from '@/hooks/theme-provider';
 
 export default function ProfileTab() {
-  const isDark = useColorScheme() === 'dark';
+  const { isDark } = useAppTheme();
   const t = getAppTheme(isDark);
 
   return (

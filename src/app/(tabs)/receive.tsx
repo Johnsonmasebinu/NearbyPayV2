@@ -1,12 +1,13 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View, useColorScheme } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ReceiveScreen } from '@/components/screens/receive-screen';
 import { getAppTheme } from '@/constants/app-theme';
+import { useAppTheme } from '@/hooks/theme-provider';
 
 export default function ReceiveTab() {
-  const isDark = useColorScheme() === 'dark';
+  const { isDark } = useAppTheme();
   const t = getAppTheme(isDark);
 
   return (
