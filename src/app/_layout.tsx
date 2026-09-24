@@ -130,6 +130,7 @@ function RootShell() {
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="index" />
               <Stack.Screen name="more" />
+              <Stack.Screen name="check-in" />
             </Stack>
             {!hasPin && !pinSheetDismissed && (
               <PinSheet

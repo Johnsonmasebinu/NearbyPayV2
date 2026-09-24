@@ -9,7 +9,7 @@ import {
   UserIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
     Modal,
     Platform,
@@ -58,7 +58,13 @@ const FILTERS: { id: FilterKey; label: string }[] = [
   { id: 'received', label: 'Received' },
 ];
 
-export default function TransactionHistoryScreen({ onBack }: { onBack: () => void }) {
+export default function TransactionHistoryScreen({
+  onBack,
+  initialTransactionId,
+}: {
+  onBack: () => void;
+  initialTransactionId?: string;
+}) {
   const { show } = useToast();
   const { transactions } = useTransactions();
   const { isDark } = useAppTheme();
@@ -87,6 +93,15 @@ export default function TransactionHistoryScreen({ onBack }: { onBack: () => voi
       })),
     [transactions],
   );
+
+  useEffect(() => {
+    if (!initialTransactionId) return;
+    const transaction = historyTransactions.find((tx) => tx.id === initialTransactionId);
+    if (transaction && selectedTx?.id !== transaction.id) {
+      const timer = setTimeout(() => setSelectedTx(transaction), 0);
+      return () => clearTimeout(timer);
+    }
+  }, [historyTransactions, initialTransactionId, selectedTx]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -148,8 +163,8 @@ export default function TransactionHistoryScreen({ onBack }: { onBack: () => voi
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={handleRefresh}
-              tintColor="#1E44F8"
-              colors={['#1E44F8']}
+              tintColor="#FFFFFF"
+              colors={['#FFFFFF']}
               progressBackgroundColor={t.cardBg}
             />
           }>

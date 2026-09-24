@@ -1,8 +1,14 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import TransactionHistoryScreen from '@/components/transaction-history';
 
 export default function HistoryTab() {
   const router = useRouter();
-  return <TransactionHistoryScreen onBack={() => router.navigate('/(tabs)/home')} />;
+  const { transactionId } = useLocalSearchParams<{ transactionId?: string }>();
+  return (
+    <TransactionHistoryScreen
+      onBack={() => router.navigate('/(tabs)/home')}
+      initialTransactionId={transactionId}
+    />
+  );
 }

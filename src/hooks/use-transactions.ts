@@ -83,7 +83,7 @@ export function useTransactions() {
     })();
 
     const channel = supabase
-      .channel(`transactions:${user.id}`)
+      .channel(`transactions:${user.id}:${Date.now()}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'transactions', filter: `user_id=eq.${user.id}` },

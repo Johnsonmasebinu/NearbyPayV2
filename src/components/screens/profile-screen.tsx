@@ -5,6 +5,7 @@ import {
   BluetoothIcon,
   Camera01Icon,
   Cancel01Icon,
+  Calendar03Icon,
   CheckmarkBadge01Icon,
   Copy01Icon,
   CustomerSupportIcon,
@@ -25,6 +26,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -52,6 +54,7 @@ import { useAuth } from '@/hooks/auth-provider';
 import { useUserProfile } from '@/hooks/user-profile-provider';
 
 export function ProfileScreen() {
+  const router = useRouter();
   const { isDark, mode, setMode } = useAppTheme();
   const t = getAppTheme(isDark);
   const { show } = useToast();
@@ -257,6 +260,28 @@ export function ProfileScreen() {
           <Text style={[styles.bankCardFooterText, { color: t.textSecondary }]}>
             Auto-credits instantly • Zero deposit fees
           </Text>
+        </View>
+      </View>
+
+      {/* ─── Weekly Rewards ──────────────────────────────────────── */}
+      <View style={styles.sectionGroup}>
+        <Text style={[styles.sectionHeaderTitle, { color: t.textSecondary }]}>REWARDS</Text>
+        <View style={[styles.groupedCard, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
+          <TouchableOpacity
+            style={styles.groupedRow}
+            activeOpacity={0.7}
+            onPress={() => router.push('/check-in')}
+            accessibilityRole="button"
+            accessibilityLabel="Open Daily Check-In">
+            <View style={[styles.rowIconWrap, { backgroundColor: t.brandTint }]}>
+              <HugeiconsIcon icon={Calendar03Icon} size={18} color={t.brand} />
+            </View>
+            <View style={styles.rowContentWrap}>
+              <Text style={[styles.rowItemTitle, { color: t.textPrimary }]}>Daily Check-In</Text>
+              <Text style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>View your weekly rewards and check-in</Text>
+            </View>
+            <HugeiconsIcon icon={ArrowRight01Icon} size={17} color={t.muted} />
+          </TouchableOpacity>
         </View>
       </View>
 

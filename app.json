@@ -36,11 +36,18 @@
       ],
       "expo-font",
       [
+        "expo-file-system",
+        {
+          "enableFileSharing": true
+        }
+      ],
+      [
         "expo-navigation-bar",
         {
           "enforceContrast": false
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true,

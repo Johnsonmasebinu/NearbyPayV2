@@ -17,9 +17,13 @@ export default function HomeTab() {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: HERO_STOPS.from }]} edges={['top']}>
       <View style={[styles.container, { backgroundColor: t.pageBg }]}>
         <HomeDashboard
-          onNavigate={(tab) => {
+          onNavigate={(tab, transactionId) => {
             if (tab === 'more') {
               router.push('/more');
+            } else if (tab === 'check-in') {
+              router.push('/check-in');
+            } else if (tab === 'history' && transactionId) {
+              router.push(`/(tabs)/history?transactionId=${encodeURIComponent(transactionId)}`);
             } else {
               router.navigate(`/(tabs)/${tab}` as `/(tabs)/${'send' | 'receive' | 'history' | 'profile'}`);
             }

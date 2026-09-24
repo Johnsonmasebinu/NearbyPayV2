@@ -13,16 +13,18 @@ import {
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as Clipboard from 'expo-clipboard';
+import { File, Paths } from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { captureRef } from 'react-native-view-shot';
 import {
   ActivityIndicator,
   Keyboard,
   Modal,
   Platform,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -89,6 +91,7 @@ export function SendScreen() {
   const [qrModalVisible, setQrModalVisible] = useState(false);
   const [qrInput, setQrInput] = useState('');
   const [receipt, setReceipt] = useState<TransferReceipt | null>(null);
+  const receiptArtworkRef = useRef<View>(null);
 
   const numAmount = parseFloat(amount.replace(/[^0-9.]/g, '')) || 0;
   const hasAmount = numAmount > 0;
@@ -304,10 +307,19 @@ export function SendScreen() {
         const isValid = await verifyPin(pin);
         if (!isValid) throw new Error('Incorrect transaction PIN. Please try again.');
       }
-      const ref = 'NPP-BNK-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+      const { data, error } = await supabase.rpc('record_bank_transfer', {
+        p_account_number: recipientQuery,
+        p_bank_name: selectedBank || 'Bank Transfer',
+        p_amount: numAmount,
+        p_note: note.trim() || null,
+      });
+
+      if (error) throw new Error(error.message);
+      if (!data.success) throw new Error(data.error || 'Bank transfer failed');
+
       await refresh();
       setReceipt({
-        reference: ref,
+        reference: data.reference,
         amount: numAmount,
         recipientName: recipientQuery || 'Bank Recipient',
         recipientTag: selectedBank || 'Access Bank',
@@ -344,12 +356,36 @@ export function SendScreen() {
   const shareReceipt = async () => {
     if (!receipt) return;
     try {
-      await Share.share({
-        message: `NearbyPay Transfer Receipt\nAmount: ₦${receipt.amount.toLocaleString('en-NG')}\nTo: ${receipt.recipientName} (@${receipt.recipientTag})\nRef: ${receipt.reference}\nStatus: Successful`,
-        title: 'NearbyPay Receipt',
+      if (!(await Sharing.isAvailableAsync())) {
+        show({ message: 'Image sharing is not available on this device.', variant: 'error' });
+        return;
+      }
+
+      const capturedUri = await captureRef(receiptArtworkRef, {
+        format: 'png',
+        quality: 1,
+        result: 'tmpfile',
       });
-    } catch {
-      // ignore
+
+      const savedReceipt = new File(
+        Paths.document,
+        `NearbyPay-Receipt-${receipt.reference}.png`,
+      );
+      if (savedReceipt.exists) {
+        savedReceipt.delete();
+      }
+      await new File(capturedUri).copy(savedReceipt);
+
+      await Sharing.shareAsync(savedReceipt.uri, {
+        mimeType: 'image/png',
+        dialogTitle: 'Share NearbyPay receipt',
+        UTI: 'public.png',
+      });
+    } catch (error) {
+      show({
+        message: error instanceof Error ? error.message : 'Could not create receipt image.',
+        variant: 'error',
+      });
     }
   };
 
@@ -870,6 +906,9 @@ export function SendScreen() {
       <Modal visible={Boolean(receipt)} transparent animationType="fade">
         <View style={styles.receiptBackdrop}>
           <View style={[styles.receiptCard, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
+            <View ref={receiptArtworkRef} style={[styles.receiptArtwork, { backgroundColor: t.cardBg }]}>
+              <Text style={[styles.receiptBrand, { color: t.brand }]}>NearbyPay</Text>
+              <Text style={[styles.receiptType, { color: t.textSecondary }]}>TRANSACTION RECEIPT</Text>
             {/* Green glowing success badge */}
             <View style={styles.successIconCircle}>
               <HugeiconsIcon icon={CheckmarkCircle02Icon} size={54} color="#16A34A" />
@@ -935,6 +974,7 @@ export function SendScreen() {
                   </Text>
                 </View>
               )}
+            </View>
             </View>
 
             {/* Action buttons */}
@@ -1499,6 +1539,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 24,
     alignItems: 'center',
+  },
+  receiptArtwork: {
+    width: '100%',
+    alignItems: 'center',
+    padding: 4,
+  },
+  receiptBrand: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 18,
+    letterSpacing: -0.4,
+  },
+  receiptType: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 9,
+    letterSpacing: 1.4,
+    marginTop: 3,
+    marginBottom: 18,
   },
   successIconCircle: {
     width: 72,
