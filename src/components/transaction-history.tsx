@@ -1,15 +1,12 @@
 import {
-    ArrowLeft01Icon,
-    Calendar03Icon,
-    Cancel01Icon,
-    Download01Icon,
-    FilterHorizontalIcon,
-    Search01Icon,
-    ShoppingBag02Icon,
-    Tick02Icon,
-    UserGroupIcon,
-    UserIcon,
-    WifiIcon,
+  ArrowLeft01Icon,
+  Calendar03Icon,
+  Cancel01Icon,
+  Download01Icon,
+  FilterHorizontalIcon,
+  Search01Icon,
+  Tick02Icon,
+  UserIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useMemo, useState } from 'react';
@@ -30,6 +27,8 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { useToast } from '@/components/ui/toast';
 import { getAppTheme, GRADIENT_STOPS } from '@/constants/app-theme';
 import { useAppTheme } from '@/hooks/theme-provider';
+import { useTransactions } from '@/hooks/use-transactions';
+import { formatTransactionDate } from '@/lib/welcome-transaction';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type TxType = 'sent' | 'received';
@@ -51,105 +50,6 @@ type HistoryTx = {
   channel: string;
 };
 
-const HISTORY_TX: HistoryTx[] = [
-  {
-    id: '1',
-    title: 'Tunde Adeboyo',
-    category: 'Transfer',
-    date: 'Jun 28, 10:24 AM',
-    dayGroup: 'Today',
-    amount: '- ₦5,000',
-    numeric: 5000,
-    type: 'sent',
-    icon: UserIcon,
-    iconColor: '#EF4444',
-    amountColor: '#EF4444',
-    status: 'Completed',
-    reference: 'NPP-93841-XT',
-    channel: 'NearbyPay Transfer',
-  },
-  {
-    id: '2',
-    title: 'Bisi Lawal',
-    category: 'Transfer',
-    date: 'Jun 28, 08:02 AM',
-    dayGroup: 'Today',
-    amount: '+ ₦20,000',
-    numeric: 20000,
-    type: 'received',
-    icon: Download01Icon,
-    iconColor: '#16A34A',
-    amountColor: '#16A34A',
-    status: 'Completed',
-    reference: 'NPP-93840-XT',
-    channel: 'NearbyPay Transfer',
-  },
-  {
-    id: '3',
-    title: 'MTN Data Bundle',
-    category: 'Bills',
-    date: 'Jun 27, 09:12 PM',
-    dayGroup: 'Yesterday',
-    amount: '- ₦3,500',
-    numeric: 3500,
-    type: 'sent',
-    icon: WifiIcon,
-    iconColor: '#EF4444',
-    amountColor: '#EF4444',
-    status: 'Completed',
-    reference: 'NPP-93710-XT',
-    channel: 'Bills & Top-up',
-  },
-  {
-    id: '4',
-    title: 'Family Support',
-    category: 'Group',
-    date: 'Jun 27, 04:12 PM',
-    dayGroup: 'Yesterday',
-    amount: '+ ₦12,500',
-    numeric: 12500,
-    type: 'received',
-    icon: UserGroupIcon,
-    iconColor: '#16A34A',
-    amountColor: '#16A34A',
-    status: 'Completed',
-    reference: 'NPP-93698-XT',
-    channel: 'Split Payment',
-  },
-  {
-    id: '5',
-    title: 'Shoprite Ikeja',
-    category: 'Shopping',
-    date: 'Jun 26, 06:40 PM',
-    dayGroup: 'Jun 26, 2026',
-    amount: '- ₦18,200',
-    numeric: 18200,
-    type: 'sent',
-    icon: ShoppingBag02Icon,
-    iconColor: '#EF4444',
-    amountColor: '#EF4444',
-    status: 'Pending',
-    reference: 'NPP-93552-XT',
-    channel: 'Card Payment',
-  },
-  {
-    id: '6',
-    title: 'Chuka Eme',
-    category: 'Transfer',
-    date: 'Jun 26, 11:05 AM',
-    dayGroup: 'Jun 26, 2026',
-    amount: '+ ₦7,000',
-    numeric: 7000,
-    type: 'received',
-    icon: Download01Icon,
-    iconColor: '#16A34A',
-    amountColor: '#16A34A',
-    status: 'Completed',
-    reference: 'NPP-93490-XT',
-    channel: 'NearbyPay Transfer',
-  },
-];
-
 type FilterKey = 'all' | 'sent' | 'received';
 
 const FILTERS: { id: FilterKey; label: string }[] = [
@@ -160,16 +60,37 @@ const FILTERS: { id: FilterKey; label: string }[] = [
 
 export default function TransactionHistoryScreen({ onBack }: { onBack: () => void }) {
   const { show } = useToast();
+  const { transactions } = useTransactions();
   const { isDark } = useAppTheme();
   const t = getAppTheme(isDark);
   const [filter, setFilter] = useState<FilterKey>('all');
   const [query, setQuery] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedTx, setSelectedTx] = useState<HistoryTx | null>(null);
+  const historyTransactions = useMemo<HistoryTx[]>(
+    () =>
+      transactions.map((transaction) => ({
+        id: transaction.id,
+        title: transaction.title,
+        category: transaction.category,
+        date: formatTransactionDate(transaction.created_at),
+        dayGroup: new Date(transaction.created_at).toDateString() === new Date().toDateString() ? 'Today' : new Date(transaction.created_at).toLocaleDateString(),
+        amount: `${transaction.type === 'received' ? '+' : '-'} ₦${transaction.amount.toLocaleString('en-NG')}`,
+        numeric: transaction.amount,
+        type: transaction.type,
+        icon: transaction.type === 'received' ? Download01Icon : UserIcon,
+        iconColor: transaction.type === 'received' ? '#16A34A' : '#EF4444',
+        amountColor: transaction.type === 'received' ? '#16A34A' : '#EF4444',
+        status: transaction.status,
+        reference: transaction.reference,
+        channel: transaction.channel,
+      })),
+    [transactions],
+  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return HISTORY_TX.filter((tx) => {
+    return historyTransactions.filter((tx) => {
       const matchesFilter = filter === 'all' || tx.type === filter;
       const matchesQuery =
         q.length === 0 ||
@@ -177,7 +98,7 @@ export default function TransactionHistoryScreen({ onBack }: { onBack: () => voi
         tx.category.toLowerCase().includes(q);
       return matchesFilter && matchesQuery;
     });
-  }, [filter, query]);
+  }, [filter, historyTransactions, query]);
 
   const groups = useMemo(() => {
     const map = new Map<string, HistoryTx[]>();

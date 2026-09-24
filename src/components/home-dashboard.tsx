@@ -6,7 +6,6 @@ import {
     Notification03Icon,
     Sent02Icon,
     Tick02Icon,
-    UserGroupIcon,
     UserIcon,
     ViewIcon,
     ViewOffSlashIcon,
@@ -31,6 +30,8 @@ import { useToast } from '@/components/ui/toast';
 import { getAppTheme, GRADIENT_STOPS, HERO_STOPS } from '@/constants/app-theme';
 import { useAppTheme } from '@/hooks/theme-provider';
 import { useUserProfile } from '@/hooks/user-profile-provider';
+import { useTransactions } from '@/hooks/use-transactions';
+import { formatTransactionDate } from '@/lib/welcome-transaction';
 
 type StarSpec = {
   id: number;
@@ -47,39 +48,6 @@ const QUICK_ACTIONS = [
   { id: 'receive', label: 'Receive', icon: Download01Icon },
   { id: 'history', label: 'History', icon: Clock01Icon },
   { id: 'more', label: 'More', icon: MoreHorizontalIcon },
-];
-
-const TRANSACTIONS = [
-  {
-    id: '1',
-    title: 'Sent to Tunde Adeboyo',
-    date: 'Jun 28, 10:24 AM',
-    amount: '- ₦5,000',
-    type: 'sent',
-    icon: UserIcon,
-    iconColor: '#2E45F4',
-    amountColor: '#EF4444',
-  },
-  {
-    id: '2',
-    title: 'Received from Bisi Lawal',
-    date: 'Jun 27, 04:12 PM',
-    amount: '+ ₦20,000',
-    type: 'received',
-    icon: Download01Icon,
-    iconColor: '#16A34A',
-    amountColor: '#16A34A',
-  },
-  {
-    id: '3',
-    title: 'Sent to Family',
-    date: 'Jun 25, 09:45 PM',
-    amount: '- ₦12,500',
-    type: 'sent',
-    icon: UserGroupIcon,
-    iconColor: '#2E45F4',
-    amountColor: '#EF4444',
-  },
 ];
 
 function TwinklingStar({ star }: { star: StarSpec }) {
@@ -148,6 +116,7 @@ interface HomeDashboardProps {
 export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
   const { show } = useToast();
   const { profile } = useUserProfile();
+  const { transactions, balance, refresh } = useTransactions();
   const { isDark } = useAppTheme();
   const t = getAppTheme(isDark);
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
@@ -168,9 +137,15 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
   });
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsRefreshing(true);
-    setTimeout(() => setIsRefreshing(false), 1200);
+    try {
+      await refresh();
+    } catch {
+      // ignore
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const handleActionPress = (action: string) => {
@@ -183,10 +158,15 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
   };
 
   const txTint = { sent: t.brandTint, received: t.successTint } as const;
+  const recentTransactions = transactions.slice(0, 3);
+  const formattedBalance = `₦${balance.toLocaleString('en-NG', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 
   return (
     <ScrollView
-      style={styles.scrollView}
+      style={[styles.scrollView, { backgroundColor: HERO_STOPS.from }]}
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
       refreshControl={
@@ -194,10 +174,13 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
           refreshing={isRefreshing}
           onRefresh={handleRefresh}
           tintColor="#FFFFFF"
-          colors={['#2E45F4']}
-          progressBackgroundColor={t.cardBg}
+          colors={['#FFFFFF']}
+          progressBackgroundColor={HERO_STOPS.from}
         />
       }>
+      {/* Top overscroll guard so pulling down never shows white gap/seam */}
+      <View style={styles.topOverscrollGuard} pointerEvents="none" />
+
       {/* Hero — dark indigo header with brand, greeting and balance card */}
       <View style={styles.hero}>
         <Svg style={StyleSheet.absoluteFill}>
@@ -241,7 +224,7 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
           <View style={styles.greetingSection}>
             <Text style={styles.greetingSub}>Good morning,</Text>
             <View style={styles.nameRow}>
-              <Text style={styles.userName}>Chinedu Okafor</Text>
+              <Text style={styles.userName}>{profile.name}</Text>
               <View style={styles.verifiedBadge}>
                 <HugeiconsIcon icon={Tick02Icon} size={10} color="#FFFFFF" strokeWidth={2.8} />
               </View>
@@ -282,14 +265,14 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
                 />
               </TouchableOpacity>
             </View>
-            <Text style={styles.balanceAmount}>{isBalanceVisible ? '₦245,680.75' : '₦ ••••••'}</Text>
+            <Text style={styles.balanceAmount}>{isBalanceVisible ? formattedBalance : '****'}</Text>
             <TouchableOpacity
               style={styles.availableRow}
               activeOpacity={0.8}
               onPress={() => onNavigate('history')}>
               <View>
                 <Text style={styles.availableLabel}>Available Balance</Text>
-                <Text style={styles.availableValue}>{isBalanceVisible ? '₦245,680.75' : '₦ ••••••'}</Text>
+                <Text style={styles.availableValue}>{isBalanceVisible ? formattedBalance : '****'}</Text>
               </View>
               <HugeiconsIcon icon={ArrowRight01Icon} size={15} color="rgba(255, 255, 255, 0.85)" />
             </TouchableOpacity>
@@ -297,76 +280,85 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
         </View>
       </View>
 
-      {/* Quick actions — four tiled cards */}
-      <View style={styles.actionRow}>
-        {QUICK_ACTIONS.map((action) => (
-          <TouchableOpacity
-            key={action.id}
-            style={[styles.actionTile, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}
-            activeOpacity={0.7}
-            onPress={() => handleActionPress(action.label)}>
-            <View style={[styles.actionIconWrap, { backgroundColor: t.brandTint }]}>
-              <HugeiconsIcon icon={action.icon} size={19} color={t.brand} />
-            </View>
-            <Text style={[styles.actionLabel, { color: t.textPrimary }]}>{action.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <View style={styles.promoCard}>
-        <Svg style={StyleSheet.absoluteFill}>
-          <Defs>
-            <LinearGradient id="promoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <Stop offset="0%" stopColor="#101446" />
-              <Stop offset="60%" stopColor="#0A0E33" />
-              <Stop offset="100%" stopColor="#05081E" />
-            </LinearGradient>
-          </Defs>
-          <Rect width="100%" height="100%" rx={20} fill="url(#promoGrad)" />
-        </Svg>
-        <View style={styles.promoGlowCircle} pointerEvents="none" />
-        <Image source={require('@/assets/images/dash/image_2.png')} style={styles.promoImage} resizeMode="contain" />
-        <View style={styles.promoTextCol}>
-          <Text style={styles.promoTitle}>{'One App.\nAll Your People.'}</Text>
-          <Text style={styles.promoSubtitle}>{'Send money, split bills,\ncollect payments and more.'}</Text>
-          <TouchableOpacity
-            style={styles.promoButton}
-            activeOpacity={0.8}
-            onPress={() => show({ message: 'Discover NearbyPay social transfers & split pay', variant: 'info' })}>
-            <Text style={styles.promoButtonText}>Explore NearbyPay</Text>
-            <HugeiconsIcon icon={ArrowRight01Icon} size={12} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.transactionsSection}>
-        <View style={styles.transactionsHeader}>
-          <Text style={[styles.transactionsTitle, { color: t.textPrimary }]}>Recent Transactions</Text>
-          <TouchableOpacity activeOpacity={0.7} onPress={() => onNavigate('history')}>
-            <Text style={[styles.seeAllText, { color: t.brand }]}>See all</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.transactionsList}>
-          {TRANSACTIONS.map((tx, index) => (
+      {/* Body container with page background below hero */}
+      <View style={[styles.bodyContainer, { backgroundColor: t.pageBg }]}>
+        {/* Quick actions — four tiled cards */}
+        <View style={styles.actionRow}>
+          {QUICK_ACTIONS.map((action) => (
             <TouchableOpacity
-              key={tx.id}
-              style={[
-                styles.transactionItem,
-                { borderBottomColor: t.divider },
-                index === TRANSACTIONS.length - 1 && styles.lastTransactionItem,
-              ]}
+              key={action.id}
+              style={[styles.actionTile, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}
               activeOpacity={0.7}
-              onPress={() => show({ message: `Transaction details: ${tx.title}`, variant: 'info' })}>
-              <View style={[styles.txIconWrap, { backgroundColor: txTint[tx.type as 'sent' | 'received'] }]}>
-                <HugeiconsIcon icon={tx.icon} size={18} color={tx.iconColor} />
+              onPress={() => handleActionPress(action.label)}>
+              <View style={[styles.actionIconWrap, { backgroundColor: t.brandTint }]}>
+                <HugeiconsIcon icon={action.icon} size={19} color={t.brand} />
               </View>
-              <View style={styles.txInfo}>
-                <Text style={[styles.txTitle, { color: t.textPrimary }]}>{tx.title}</Text>
-                <Text style={[styles.txDate, { color: t.textSecondary }]}>{tx.date}</Text>
-              </View>
-              <Text style={[styles.txAmount, { color: tx.amountColor }]}>{tx.amount}</Text>
+              <Text style={[styles.actionLabel, { color: t.textPrimary }]}>{action.label}</Text>
             </TouchableOpacity>
           ))}
+        </View>
+
+        <View style={styles.promoCard}>
+          <Svg style={StyleSheet.absoluteFill}>
+            <Defs>
+              <LinearGradient id="promoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <Stop offset="0%" stopColor="#101446" />
+                <Stop offset="60%" stopColor="#0A0E33" />
+                <Stop offset="100%" stopColor="#05081E" />
+              </LinearGradient>
+            </Defs>
+            <Rect width="100%" height="100%" rx={20} fill="url(#promoGrad)" />
+          </Svg>
+          <View style={styles.promoGlowCircle} pointerEvents="none" />
+          <Image source={require('@/assets/images/dash/image_2.png')} style={styles.promoImage} resizeMode="contain" />
+          <View style={styles.promoTextCol}>
+            <Text style={styles.promoTitle}>{'One App.\nAll Your People.'}</Text>
+            <Text style={styles.promoSubtitle}>{'Send money, split bills,\ncollect payments and more.'}</Text>
+            <TouchableOpacity
+              style={styles.promoButton}
+              activeOpacity={0.8}
+              onPress={() => show({ message: 'Discover NearbyPay social transfers & split pay', variant: 'info' })}>
+              <Text style={styles.promoButtonText}>Explore NearbyPay</Text>
+              <HugeiconsIcon icon={ArrowRight01Icon} size={12} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.transactionsSection}>
+          <View style={styles.transactionsHeader}>
+            <Text style={[styles.transactionsTitle, { color: t.textPrimary }]}>Recent Transactions</Text>
+            <TouchableOpacity activeOpacity={0.7} onPress={() => onNavigate('history')}>
+              <Text style={[styles.seeAllText, { color: t.brand }]}>See all</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.transactionsList}>
+            {recentTransactions.map((tx, index) => (
+              <TouchableOpacity
+                key={tx.id}
+                style={[
+                  styles.transactionItem,
+                  { borderBottomColor: t.divider },
+                  index === recentTransactions.length - 1 && styles.lastTransactionItem,
+                ]}
+                activeOpacity={0.7}
+                onPress={() => show({ message: `Transaction details: ${tx.title}`, variant: 'info' })}>
+                <View style={[styles.txIconWrap, { backgroundColor: txTint[tx.type] }]}>
+                  <HugeiconsIcon
+                    icon={tx.type === 'received' ? Download01Icon : UserIcon}
+                    size={18}
+                    color={tx.type === 'received' ? '#16A34A' : '#2E45F4'}
+                  />
+                </View>
+                <View style={styles.txInfo}>
+                  <Text style={[styles.txTitle, { color: t.textPrimary }]}>{tx.title}</Text>
+                  <Text style={[styles.txDate, { color: t.textSecondary }]}>{formatTransactionDate(tx.created_at)}</Text>
+                </View>
+                <Text style={[styles.txAmount, { color: tx.type === 'received' ? '#16A34A' : '#EF4444' }]}>
+                  {tx.type === 'received' ? '+' : '-'} ₦{tx.amount.toLocaleString('en-NG')}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
       </View>
     </ScrollView>
@@ -375,7 +367,22 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
 
 const styles = StyleSheet.create({
   scrollView: { flex: 1 },
-  scrollContent: { paddingBottom: 28 },
+  scrollContent: { flexGrow: 1, paddingBottom: 28 },
+  topOverscrollGuard: {
+    position: 'absolute',
+    top: -1200,
+    left: -200,
+    right: -200,
+    height: 1200,
+    backgroundColor: HERO_STOPS.from,
+  },
+  bodyContainer: {
+    flexGrow: 1,
+    minHeight: 600,
+    marginTop: -2,
+    paddingTop: 4,
+    paddingBottom: 24,
+  },
   hero: {
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,

@@ -1,4 +1,4 @@
-import { Moon02Icon, Sun03Icon, Tick02Icon } from '@hugeicons/core-free-icons';
+import { Moon02Icon, Sun03Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
@@ -8,8 +8,6 @@ import {
   ImageSourcePropType,
   NativeScrollEvent,
   NativeSyntheticEvent,
-  Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -20,13 +18,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getAppTheme } from '@/constants/app-theme';
 import { useAppTheme } from '@/hooks/theme-provider';
-import { AVAILABLE_AVATARS, useUserProfile } from '@/hooks/user-profile-provider';
 
 type SlideData = {
   id: string;
-  type?: 'intro' | 'avatar';
   badge: string;
-  image?: ImageSourcePropType;
+  image: ImageSourcePropType;
   title: string;
   description: string;
   isWide?: boolean;
@@ -35,7 +31,6 @@ type SlideData = {
 const SLIDES: SlideData[] = [
   {
     id: '1',
-    type: 'intro',
     badge: 'NEARBY PAYMENTS',
     image: require('@/assets/images/ill/both-nobg.png'),
     title: 'Welcome to NearbyPay',
@@ -44,7 +39,6 @@ const SLIDES: SlideData[] = [
   },
   {
     id: '2',
-    type: 'intro',
     badge: 'FAST & SECURE',
     image: require('@/assets/images/ill/man.png'),
     title: 'Instant Transfers',
@@ -53,19 +47,11 @@ const SLIDES: SlideData[] = [
   },
   {
     id: '3',
-    type: 'intro',
     badge: 'CONTACTLESS FREEDOM',
     image: require('@/assets/images/ill/woman.png'),
     title: 'Nearby Freedom',
     description: 'Join thousands enjoying the modern standard for proximity payments anywhere, anytime.',
     isWide: false,
-  },
-  {
-    id: '4',
-    type: 'avatar',
-    badge: 'CHOOSE YOUR AVATAR',
-    title: 'Select Profile Memo',
-    description: 'Choose a memo avatar for your profile. This will be visible to nearby merchants and contacts.',
   },
 ];
 
@@ -78,10 +64,8 @@ export function Onboarding({ onFinish }: OnboardingProps) {
   const insets = useSafeAreaInsets();
   const { isDark, setMode } = useAppTheme();
   const t = getAppTheme(isDark);
-  const { profile, updateAvatar } = useUserProfile();
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedAvatar, setSelectedAvatar] = useState(profile.avatar || AVAILABLE_AVATARS[0]);
   const flatListRef = useRef<FlatList<SlideData>>(null);
 
   // Proportional responsive sizes
@@ -102,14 +86,11 @@ export function Onboarding({ onFinish }: OnboardingProps) {
       flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
       setCurrentIndex(nextIndex);
     } else {
-      // Final slide: save chosen avatar and finish
-      updateAvatar(selectedAvatar);
       onFinish();
     }
   };
 
   const handleSkip = () => {
-    updateAvatar(selectedAvatar);
     onFinish();
   };
 
@@ -162,80 +143,7 @@ export function Onboarding({ onFinish }: OnboardingProps) {
     );
   };
 
-  const renderAvatarSlide = (item: SlideData) => {
-    return (
-      <View style={[styles.slide, { width }]}>
-        {/* Centered Preview Ring */}
-        <View style={styles.avatarSlidePreviewWrap}>
-          <View style={[styles.avatarPreviewRing, { borderColor: t.brand, backgroundColor: t.brandTint }]}>
-            <Image
-              source={{ uri: selectedAvatar }}
-              style={styles.avatarPreviewImg}
-              contentFit="contain"
-              cachePolicy="memory-disk"
-            />
-          </View>
-        </View>
-
-        {/* Typography */}
-        <View style={styles.textContainer}>
-          <View style={[styles.badgeChip, { backgroundColor: t.brandTint }]}>
-            <Text style={[styles.badgeText, { color: t.brand }]}>{item.badge}</Text>
-          </View>
-
-          <Text style={[styles.title, { color: t.textPrimary }]}>{item.title}</Text>
-          <Text style={[styles.description, { color: t.textSecondary }]}>{item.description}</Text>
-        </View>
-
-        {/* Avatars Grid (Preloaded in memory/disk cache) */}
-        <View style={[styles.avatarGridContainer, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
-          <ScrollView
-            style={styles.avatarGridScroll}
-            contentContainerStyle={styles.avatarGridContent}
-            showsVerticalScrollIndicator={false}>
-            <View style={styles.avatarGrid}>
-              {AVAILABLE_AVATARS.map((url) => {
-                const isSelected = selectedAvatar === url;
-                return (
-                  <TouchableOpacity
-                    key={url}
-                    style={[
-                      styles.avatarGridSlot,
-                      {
-                        backgroundColor: isSelected ? t.brandTint : t.chipBg,
-                        borderColor: isSelected ? t.brand : 'transparent',
-                      },
-                    ]}
-                    activeOpacity={0.75}
-                    onPress={() => setSelectedAvatar(url)}>
-                    <Image
-                      source={{ uri: url }}
-                      style={styles.avatarGridImg}
-                      contentFit="contain"
-                      cachePolicy="memory-disk"
-                    />
-
-                    {isSelected && (
-                      <View style={[styles.avatarGridCheck, { backgroundColor: t.brand, borderColor: t.cardBg }]}>
-                        <HugeiconsIcon icon={Tick02Icon} size={9} color="#FFFFFF" strokeWidth={3} />
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </ScrollView>
-        </View>
-      </View>
-    );
-  };
-
-  const renderSlide = ({ item }: { item: SlideData }) => {
-    if (item.type === 'avatar') {
-      return renderAvatarSlide(item);
-    }
-    return renderIntroSlide(item);
-  };
+  const renderSlide = ({ item }: { item: SlideData }) => renderIntroSlide(item);
 
   const isLastSlide = currentIndex === SLIDES.length - 1;
 
@@ -334,7 +242,7 @@ export function Onboarding({ onFinish }: OnboardingProps) {
           onPress={handleNext}
           activeOpacity={0.88}>
           <Text style={styles.primaryButtonText}>
-            {isLastSlide ? 'Save & Get Started' : 'Continue'}
+            {isLastSlide ? 'Get Started' : 'Continue'}
           </Text>
           <Text style={styles.buttonArrow}>→</Text>
         </TouchableOpacity>
@@ -448,79 +356,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     maxWidth: 320,
   },
-
-  /* Avatar Slide Specific */
-  avatarSlidePreviewWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  avatarPreviewRing: {
-    width: 78,
-    height: 78,
-    borderRadius: 39,
-    borderWidth: 2.5,
-    padding: 3,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.12, shadowRadius: 8 },
-      android: { elevation: 3 },
-      web: { shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.12, shadowRadius: 8 },
-    }),
-  },
-  avatarPreviewImg: {
-    width: 66,
-    height: 66,
-    borderRadius: 33,
-  },
-  avatarGridContainer: {
-    width: '100%',
-    maxHeight: 180,
-    borderRadius: 20,
-    borderWidth: 1,
-    marginTop: 14,
-    padding: 10,
-    overflow: 'hidden',
-  },
-  avatarGridScroll: {
-    flexGrow: 0,
-  },
-  avatarGridContent: {
-    paddingVertical: 4,
-  },
-  avatarGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    rowGap: 10,
-  },
-  avatarGridSlot: {
-    width: '18%',
-    aspectRatio: 1,
-    borderRadius: 22,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  avatarGridImg: {
-    width: '84%',
-    height: '84%',
-    borderRadius: 18,
-  },
-  avatarGridCheck: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-  },
-
   /* Footer */
   footer: {
     paddingHorizontal: 24,

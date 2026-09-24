@@ -1,8 +1,10 @@
-import { Cancel01Icon, Tick02Icon } from '@hugeicons/core-free-icons';
+import { Camera01Icon, Cancel01Icon, Tick02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import { Image } from 'expo-image';
 import {
+  ActivityIndicator,
   Modal,
   Platform,
   ScrollView,
@@ -14,6 +16,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getAppTheme } from '@/constants/app-theme';
+import { useAuth } from '@/hooks/auth-provider';
+import { useToast } from '@/components/ui/toast';
 import { useAppTheme } from '@/hooks/theme-provider';
 import { AVAILABLE_AVATARS } from '@/hooks/user-profile-provider';
 
@@ -33,9 +37,12 @@ export function AvatarPickerSheet({
   const { isDark } = useAppTheme();
   const t = getAppTheme(isDark);
   const insets = useSafeAreaInsets();
+  const { user, uploadProfilePicture } = useAuth();
+  const { show } = useToast();
 
   const [selected, setSelected] = useState(currentAvatar);
   const [prevVisible, setPrevVisible] = useState(visible);
+  const [isUploading, setIsUploading] = useState(false);
 
   if (visible !== prevVisible) {
     setPrevVisible(visible);
@@ -43,6 +50,47 @@ export function AvatarPickerSheet({
       setSelected(currentAvatar);
     }
   }
+
+  const handlePickCustomPhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        show({ message: 'Photo library permission is required to choose a picture', variant: 'error' });
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+      });
+
+      if (result.canceled || !result.assets || !result.assets[0]?.uri) {
+        return;
+      }
+
+      const localUri = result.assets[0].uri;
+
+      if (user) {
+        setIsUploading(true);
+        const publicUrl = await uploadProfilePicture(localUri);
+        setSelected(publicUrl);
+        onSelect(publicUrl);
+        show({ message: 'Profile photo uploaded successfully!', variant: 'success' });
+        onClose();
+      } else {
+        setSelected(localUri);
+        onSelect(localUri);
+        show({ message: 'Photo selected!', variant: 'success' });
+        onClose();
+      }
+    } catch (err: any) {
+      show({ message: err.message || 'Failed to upload photo', variant: 'error' });
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleConfirm = () => {
     onSelect(selected);
@@ -96,6 +144,30 @@ export function AvatarPickerSheet({
             <Text style={[styles.previewHint, { color: t.textSecondary }]}>
               Tap any avatar below to preview
             </Text>
+          </View>
+
+          {/* Custom Upload Button */}
+          <TouchableOpacity
+            style={[styles.customUploadBtn, { backgroundColor: t.brandTint, borderColor: t.brand }]}
+            activeOpacity={0.8}
+            disabled={isUploading}
+            onPress={handlePickCustomPhoto}>
+            {isUploading ? (
+              <ActivityIndicator size="small" color={t.brand} />
+            ) : (
+              <>
+                <HugeiconsIcon icon={Camera01Icon} size={17} color={t.brand} />
+                <Text style={[styles.customUploadBtnText, { color: t.brand }]}>
+                  Upload Custom Photo
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.pickerDividerRow}>
+            <View style={[styles.pickerDividerLine, { backgroundColor: t.divider }]} />
+            <Text style={[styles.pickerDividerText, { color: t.textSecondary }]}>OR CHOOSE A MEMO</Text>
+            <View style={[styles.pickerDividerLine, { backgroundColor: t.divider }]} />
           </View>
 
           {/* 25 Avatars Grid */}
@@ -237,8 +309,37 @@ const styles = StyleSheet.create({
     fontFamily: 'Montserrat_500Medium',
     fontSize: 11,
   },
+  customUploadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 11,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    marginVertical: 4,
+  },
+  customUploadBtnText: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 13,
+  },
+  pickerDividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginVertical: 6,
+  },
+  pickerDividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  pickerDividerText: {
+    fontFamily: 'Montserrat_600SemiBold',
+    fontSize: 10.5,
+    letterSpacing: 0.8,
+  },
   gridScroll: {
-    maxHeight: 270,
+    maxHeight: 220,
   },
   gridContent: {
     paddingVertical: 6,
