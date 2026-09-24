@@ -14,9 +14,13 @@ export default function HomeTab() {
       <StatusBar style="light" />
       <View style={[styles.container, { backgroundColor: HERO_STOPS.from }]}>
         <HomeDashboard
-          onNavigate={(tab) => {
+          onNavigate={(tab, transactionId) => {
             if (tab === 'more') {
               router.push('/more');
+            } else if (tab === 'check-in') {
+              router.push('/check-in');
+            } else if (tab === 'history' && transactionId) {
+              router.push(`/(tabs)/history?transactionId=${encodeURIComponent(transactionId)}`);
             } else {
               router.navigate(`/(tabs)/${tab}` as `/(tabs)/${'send' | 'receive' | 'history' | 'profile'}`);
             }

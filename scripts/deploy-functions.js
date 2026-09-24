@@ -113,7 +113,58 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 GRANT EXECUTE ON FUNCTION public.claim_welcome_deposit() TO authenticated, anon;
 
--- 4. Real Instant Transfer by Cashtag function
+-- 4. Record a validated bank transfer debit
+CREATE OR REPLACE FUNCTION public.record_bank_transfer(
+  p_account_number text,
+  p_bank_name text,
+  p_amount numeric,
+  p_note text DEFAULT NULL
+)
+RETURNS jsonb AS $$
+DECLARE
+  v_user_id uuid := auth.uid();
+  v_balance numeric;
+  v_reference text;
+BEGIN
+  IF v_user_id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Authentication required.');
+  END IF;
+  IF p_amount <= 0 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Amount must be greater than zero.');
+  END IF;
+  IF length(regexp_replace(coalesce(p_account_number, ''), '[^0-9]', '', 'g')) <> 10 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Enter a valid 10-digit bank account number.');
+  END IF;
+
+  SELECT COALESCE(SUM(CASE WHEN type = 'received' THEN amount ELSE -amount END), 0)
+  INTO v_balance
+  FROM public.transactions
+  WHERE user_id = v_user_id;
+
+  IF v_balance < p_amount THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Insufficient balance.');
+  END IF;
+
+  v_reference := 'NPP-BNK-' || to_char(clock_timestamp(), 'YYYYMMDDHH24MISSMS') || '-' || upper(substr(md5(random()::text), 1, 6));
+  INSERT INTO public.transactions (user_id, title, category, amount, type, status, reference, channel)
+  VALUES (
+    v_user_id,
+    'Bank transfer to ' || regexp_replace(p_account_number, '[^0-9]', '', 'g'),
+    'Transfer',
+    p_amount,
+    'sent',
+    'Completed',
+    v_reference,
+    coalesce(nullif(trim(p_note), ''), coalesce(nullif(trim(p_bank_name), ''), 'Bank Transfer'))
+  );
+
+  RETURN jsonb_build_object('success', true, 'reference', v_reference, 'amount', p_amount, 'newBalance', v_balance - p_amount);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+GRANT EXECUTE ON FUNCTION public.record_bank_transfer(text, text, numeric, text) TO authenticated;
+
+-- 5. Real Instant Transfer by Cashtag function
 CREATE OR REPLACE FUNCTION public.transfer_by_tag(
   p_recipient_tag text,
   p_amount numeric,
@@ -224,7 +275,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 GRANT EXECUTE ON FUNCTION public.transfer_by_tag(text, numeric, text) TO authenticated;
 
--- 5. Insert welcome deposit for any existing user who doesn't have it yet
+-- 6. Insert welcome deposit for any existing user who doesn't have it yet
 INSERT INTO public.transactions (user_id, title, category, amount, type, status, reference, channel, created_at)
 SELECT
   u.id,
@@ -241,6 +292,145 @@ WHERE NOT EXISTS (
   SELECT 1 FROM public.transactions t
   WHERE t.user_id = u.id AND t.title = 'Hackathon New Account Deposit'
 );
+
+-- 7. Server-validated weekly daily check-in rewards
+CREATE TABLE IF NOT EXISTS public.daily_checkins (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  checkin_date date NOT NULL,
+  week_start date NOT NULL,
+  day_name text NOT NULL,
+  reward_amount numeric(14, 2) NOT NULL,
+  reward_label text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (user_id, checkin_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_daily_checkins_user_week
+  ON public.daily_checkins(user_id, week_start, checkin_date);
+
+ALTER TABLE public.daily_checkins ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can view own daily checkins" ON public.daily_checkins;
+CREATE POLICY "Users can view own daily checkins"
+  ON public.daily_checkins FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE OR REPLACE FUNCTION public.get_weekly_checkins()
+RETURNS jsonb AS $$
+DECLARE
+  v_user_id uuid := auth.uid();
+  v_today date := current_date;
+  v_week_start date := date_trunc('week', v_today)::date;
+  v_day date;
+  v_result jsonb := '[]'::jsonb;
+  v_record public.daily_checkins;
+  v_status text;
+  v_reward text;
+  v_amount numeric;
+BEGIN
+  IF v_user_id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Authentication required.');
+  END IF;
+
+  FOR v_day IN SELECT v_week_start + generate_series(0, 6) LOOP
+    SELECT * INTO v_record
+    FROM public.daily_checkins
+    WHERE user_id = v_user_id AND checkin_date = v_day;
+
+    IF v_record.id IS NOT NULL THEN
+      v_status := 'Completed';
+      v_reward := v_record.reward_label;
+      v_amount := v_record.reward_amount;
+    ELSE
+      v_status := CASE
+        WHEN v_day = v_today THEN 'Available'
+        WHEN v_day < v_today THEN 'Missed'
+        ELSE 'Upcoming'
+      END;
+      v_reward := 'Mystery reward • Spin to reveal';
+      v_amount := NULL;
+    END IF;
+
+    v_result := v_result || jsonb_build_object(
+      'date', v_day,
+      'dayName', to_char(v_day, 'FMDay'),
+      'status', v_status,
+      'reward', v_reward,
+      'amount', v_amount
+    );
+  END LOOP;
+
+  RETURN jsonb_build_object('success', true, 'weekStart', v_week_start, 'days', v_result);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+CREATE OR REPLACE FUNCTION public.check_in_today()
+RETURNS jsonb AS $$
+DECLARE
+  v_user_id uuid := auth.uid();
+  v_today date := current_date;
+  v_week_start date := date_trunc('week', v_today)::date;
+  v_day_name text := to_char(v_today, 'FMDay');
+  v_amount numeric;
+  v_label text;
+  v_reference text;
+  v_roll numeric := random();
+BEGIN
+  IF v_user_id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Authentication required.');
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM public.daily_checkins
+    WHERE user_id = v_user_id AND checkin_date = v_today
+  ) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'You have already checked in today.');
+  END IF;
+
+  IF v_roll < 0.30 THEN v_amount := 50;
+  ELSIF v_roll < 0.55 THEN v_amount := 100;
+  ELSIF v_roll < 0.73 THEN v_amount := 150;
+  ELSIF v_roll < 0.85 THEN v_amount := 200;
+  ELSIF v_roll < 0.92 THEN v_amount := 250;
+  ELSIF v_roll < 0.96 THEN v_amount := 300;
+  ELSIF v_roll < 0.98 THEN v_amount := 350;
+  ELSIF v_roll < 0.995 THEN v_amount := 400;
+  ELSE v_amount := 500;
+  END IF;
+  v_label := 'Mystery spin reward: ₦' || v_amount::int;
+
+  v_reference := 'NPP-CHECKIN-' || to_char(clock_timestamp(), 'YYYYMMDDHH24MISSMS') || '-' || upper(substr(md5(random()::text), 1, 6));
+
+  INSERT INTO public.daily_checkins (user_id, checkin_date, week_start, day_name, reward_amount, reward_label)
+  VALUES (v_user_id, v_today, v_week_start, v_day_name, v_amount, v_label);
+
+  INSERT INTO public.transactions (user_id, title, category, amount, type, status, reference, channel)
+  VALUES (
+    v_user_id,
+    'Daily Check-In Reward - ' || v_day_name,
+    'Daily Check-In',
+    v_amount,
+    'received',
+    'Completed',
+    v_reference,
+    'NearbyPay Weekly Rewards'
+  );
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'date', v_today,
+    'dayName', v_day_name,
+    'amount', v_amount,
+    'reward', v_label,
+    'reference', v_reference
+  );
+EXCEPTION WHEN unique_violation THEN
+  RETURN jsonb_build_object('success', false, 'error', 'You have already checked in today.');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+GRANT EXECUTE ON FUNCTION public.get_weekly_checkins() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.check_in_today() TO authenticated;
 `;
 
 async function deploy() {

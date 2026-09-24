@@ -1,5 +1,6 @@
 import {
     ArrowRight01Icon,
+    Calendar03Icon,
     Clock01Icon,
     Download01Icon,
     MoreHorizontalIcon,
@@ -31,6 +32,7 @@ import { getAppTheme, GRADIENT_STOPS, HERO_STOPS } from '@/constants/app-theme';
 import { useAppTheme } from '@/hooks/theme-provider';
 import { useUserProfile } from '@/hooks/user-profile-provider';
 import { useTransactions } from '@/hooks/use-transactions';
+import { useDailyCheckIn } from '@/hooks/use-daily-check-in';
 import { formatTransactionDate } from '@/lib/welcome-transaction';
 
 type StarSpec = {
@@ -109,7 +111,7 @@ function TwinklingStar({ star }: { star: StarSpec }) {
 }
 
 interface HomeDashboardProps {
-  onNavigate: (tab: 'send' | 'receive' | 'history' | 'profile' | 'more') => void;
+  onNavigate: (tab: 'send' | 'receive' | 'history' | 'profile' | 'more' | 'check-in', transactionId?: string) => void;
 }
 
 // TODO(api): GET /wallet -> balance, GET /transactions?limit=3 -> recent
@@ -117,6 +119,7 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
   const { show } = useToast();
   const { profile } = useUserProfile();
   const { transactions, balance, refresh } = useTransactions();
+  const { days: checkInDays, refresh: refreshCheckIn } = useDailyCheckIn();
   const { isDark } = useAppTheme();
   const t = getAppTheme(isDark);
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
@@ -140,7 +143,7 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await refresh();
+      await Promise.all([refresh(), refreshCheckIn()]);
     } catch {
       // ignore
     } finally {
@@ -150,8 +153,8 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
 
   const handleActionPress = (action: string) => {
     const act = action.toLowerCase();
-    if (act === 'send' || act === 'receive' || act === 'history' || act === 'more') {
-      onNavigate(act as 'send' | 'receive' | 'history' | 'more');
+    if (act === 'send' || act === 'receive' || act === 'history' || act === 'check-in' || act === 'more') {
+      onNavigate(act as 'send' | 'receive' | 'history' | 'check-in' | 'more');
       return;
     }
     show({ message: `${action} feature opened.`, variant: 'info' });
@@ -159,6 +162,7 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
 
   const txTint = { sent: t.brandTint, received: t.successTint } as const;
   const recentTransactions = transactions.slice(0, 3);
+  const availableCheckIn = checkInDays.find((day) => day.status === 'Available');
   const formattedBalance = `₦${balance.toLocaleString('en-NG', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -166,16 +170,16 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
 
   return (
     <ScrollView
-      style={[styles.scrollView, { backgroundColor: HERO_STOPS.from }]}
+      style={[styles.scrollView, { backgroundColor: t.pageBg }]}
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl
           refreshing={isRefreshing}
           onRefresh={handleRefresh}
-          tintColor="#FFFFFF"
-          colors={['#FFFFFF']}
-          progressBackgroundColor={HERO_STOPS.from}
+          tintColor={t.brand}
+          colors={[t.brand]}
+          progressBackgroundColor={t.pageBg}
         />
       }>
       {/* Top overscroll guard so pulling down never shows white gap/seam */}
@@ -196,7 +200,7 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
         <View style={styles.heroInner}>
           <View style={styles.header}>
             <View style={styles.brandRow}>
-              <Image source={require('@/assets/images/logo/logo.png')} style={styles.logo} resizeMode="contain" />
+              <Image source={require('@/assets/images/logo/logo.png')} style={styles.logo} contentFit="contain" />
               <Text style={styles.brandTitle}>NearbyPay</Text>
             </View>
             <View style={styles.headerActions}>
@@ -246,7 +250,7 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
             <Image
               source={require('@/assets/images/dash/image.png')}
               style={styles.balanceArt}
-              resizeMode="contain"
+              contentFit="contain"
             />
             {starPositions.map((star) => (
               <TwinklingStar key={star.id} star={star} />
@@ -282,6 +286,25 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
 
       {/* Body container with page background below hero */}
       <View style={[styles.bodyContainer, { backgroundColor: t.pageBg }]}>
+        {availableCheckIn && (
+          <TouchableOpacity
+            style={[styles.checkInPrompt, { backgroundColor: t.cardBg, borderColor: t.brandTintStrong }]}
+            activeOpacity={0.82}
+            onPress={() => onNavigate('check-in')}>
+            <View style={[styles.checkInPromptIcon, { backgroundColor: t.brandTint }]}>
+              <HugeiconsIcon icon={Calendar03Icon} size={19} color={t.brand} />
+            </View>
+            <View style={styles.checkInPromptCopy}>
+              <Text style={[styles.checkInPromptEyebrow, { color: t.brand }]}>DAILY CHECK-IN AVAILABLE</Text>
+              <Text style={[styles.checkInPromptTitle, { color: t.textPrimary }]}>Spin to reveal today&apos;s reward</Text>
+              <Text style={[styles.checkInPromptReward, { color: t.textSecondary }]}>A surprise reward is waiting</Text>
+            </View>
+            <View style={[styles.checkInPromptButton, { backgroundColor: t.brand }]}>
+              <Text style={styles.checkInPromptButtonText}>Check In</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
         {/* Quick actions — four tiled cards */}
         <View style={styles.actionRow}>
           {QUICK_ACTIONS.map((action) => (
@@ -310,7 +333,7 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
             <Rect width="100%" height="100%" rx={20} fill="url(#promoGrad)" />
           </Svg>
           <View style={styles.promoGlowCircle} pointerEvents="none" />
-          <Image source={require('@/assets/images/dash/image_2.png')} style={styles.promoImage} resizeMode="contain" />
+          <Image source={require('@/assets/images/dash/image_2.png')} style={styles.promoImage} contentFit="contain" />
           <View style={styles.promoTextCol}>
             <Text style={styles.promoTitle}>{'One App.\nAll Your People.'}</Text>
             <Text style={styles.promoSubtitle}>{'Send money, split bills,\ncollect payments and more.'}</Text>
@@ -341,7 +364,7 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
                   index === recentTransactions.length - 1 && styles.lastTransactionItem,
                 ]}
                 activeOpacity={0.7}
-                onPress={() => show({ message: `Transaction details: ${tx.title}`, variant: 'info' })}>
+                onPress={() => onNavigate('history', tx.id)}>
                 <View style={[styles.txIconWrap, { backgroundColor: txTint[tx.type] }]}>
                   <HugeiconsIcon
                     icon={tx.type === 'received' ? Download01Icon : UserIcon}
@@ -383,6 +406,28 @@ const styles = StyleSheet.create({
     paddingTop: 4,
     paddingBottom: 24,
   },
+  checkInPrompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+  },
+  checkInPromptIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkInPromptCopy: { flex: 1, marginLeft: 10 },
+  checkInPromptEyebrow: { fontFamily: 'Montserrat_700Bold', fontSize: 8.5, letterSpacing: 0.7 },
+  checkInPromptTitle: { fontFamily: 'Montserrat_700Bold', fontSize: 13, marginTop: 2 },
+  checkInPromptReward: { fontFamily: 'Montserrat_500Medium', fontSize: 10.5, marginTop: 2 },
+  checkInPromptButton: { minWidth: 67, height: 34, borderRadius: 11, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+  checkInPromptButtonText: { fontFamily: 'Montserrat_700Bold', fontSize: 10, color: '#FFFFFF' },
   hero: {
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
