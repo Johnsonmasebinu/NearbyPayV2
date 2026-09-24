@@ -1,10 +1,13 @@
 import { Montserrat_400Regular, Montserrat_500Medium, Montserrat_600SemiBold, Montserrat_700Bold, useFonts } from '@expo-google-fonts/montserrat';
-import { DarkTheme, DefaultTheme, ThemeProvider, Stack } from 'expo-router';
+import { DarkTheme, DefaultTheme, ThemeProvider, Stack, usePathname } from 'expo-router';
 import { NavigationBar } from 'expo-navigation-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { useState } from 'react';
-import { Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
+import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
+
+import { getAppTheme } from '@/constants/app-theme';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { ForgotPasswordScreen } from '@/components/auth/forgot-password-screen';
@@ -19,6 +22,19 @@ import { UserProfileProvider } from '@/hooks/user-profile-provider';
 SplashScreen.preventAutoHideAsync();
 
 type AuthView = 'login' | 'signup' | 'forgot-password';
+
+/**
+ * Single source of truth for the status bar inside the authenticated app.
+ * Home's hero is dark indigo in BOTH themes, so it always needs light icons;
+ * every other surface follows the theme. Keyed by pathname so navigating
+ * between routes always re-applies the style imperatively.
+ */
+function AppStatusBar() {
+  const { isDark } = useAppTheme();
+  const pathname = usePathname();
+  const style: 'light' | 'dark' = pathname.endsWith('/home') ? 'light' : isDark ? 'light' : 'dark';
+  return <StatusBar key={pathname} style={style} />;
+}
 
 export default function TabLayout() {
   return (
@@ -35,6 +51,17 @@ function RootShell() {
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authView, setAuthView] = useState<AuthView>('login');
+
+  const t = getAppTheme(isDark);
+
+  // Android system navigation bar (back/home/recents buttons) background
+  // follows the app theme instead of the default white. The <NavigationBar>
+  // style below keeps the buttons contrasting (light buttons on dark theme).
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      SystemUI.setBackgroundColorAsync(t.pageBg).catch(() => {});
+    }
+  }, [t.pageBg]);
 
   const [fontsLoaded] = useFonts({
     Montserrat_400Regular,
@@ -80,18 +107,23 @@ function RootShell() {
 
   return (
     <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
+      {/* Status bar style is route-driven: Home's dark hero always needs light
+          icons; other routes follow the theme. Onboarding and the auth screens
+          render their own, so this only mounts with the router. */}
       {Platform.OS === 'android' && <NavigationBar style={isDark ? 'dark' : 'light'} />}
       <ToastProvider>
         <AnimatedSplashOverlay />
         {showOnboarding ? (
           <Onboarding onFinish={() => setShowOnboarding(false)} />
         ) : isAuthenticated ? (
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="index" />
-            <Stack.Screen name="more" />
-          </Stack>
+          <>
+            <AppStatusBar />
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="index" />
+              <Stack.Screen name="more" />
+            </Stack>
+          </>
         ) : (
           renderAuthScreen()
         )}

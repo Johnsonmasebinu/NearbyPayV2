@@ -1,4 +1,3 @@
-import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -12,7 +11,6 @@ export default function SendTab() {
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: t.pageBg }]} edges={['top']}>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
       <View style={[styles.container, { backgroundColor: t.pageBg }]}>
         <SendScreen />
       </View>

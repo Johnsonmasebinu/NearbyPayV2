@@ -15,6 +15,7 @@ import {
     TouchableWithoutFeedback,
     View,
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '@/hooks/theme-provider';
@@ -45,6 +46,7 @@ export function ForgotPasswordScreen({ onResetPassword, onBackToLogin }: ForgotP
       style={[styles.container, { backgroundColor: pageBg }]}
       imageStyle={styles.bgImage}
       resizeMode="cover">
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={styles.safeArea}>
         <KeyboardAvoidingView
           style={styles.keyboardView}

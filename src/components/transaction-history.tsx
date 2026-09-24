@@ -12,7 +12,6 @@ import {
     WifiIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
-import { StatusBar } from 'expo-status-bar';
 import { useMemo, useState } from 'react';
 import {
     Modal,
@@ -202,10 +201,9 @@ export default function TransactionHistoryScreen({ onBack }: { onBack: () => voi
     setTimeout(() => setIsRefreshing(false), 1200);
   };
 
+  // Status bar style is owned by (tabs)/_layout.tsx.
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: t.pageBg }]} edges={['top']}>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
-
 
       <View style={[styles.container, { backgroundColor: t.pageBg }]}>
         {/* Header */}

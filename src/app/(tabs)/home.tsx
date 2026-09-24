@@ -1,5 +1,4 @@
 import { useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -13,9 +12,9 @@ export default function HomeTab() {
   const t = getAppTheme(isDark);
 
   return (
-    // Hero-colored backdrop so the status-bar strip blends into the dark header
+    // Hero-colored backdrop so the status-bar strip blends into the dark header.
+    // Status bar style is owned by (tabs)/_layout.tsx (always "light" on home).
     <SafeAreaView style={[styles.safeArea, { backgroundColor: HERO_STOPS.from }]} edges={['top']}>
-      <StatusBar style="light" />
       <View style={[styles.container, { backgroundColor: t.pageBg }]}>
         <HomeDashboard
           onNavigate={(tab) => {
