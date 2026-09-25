@@ -9,8 +9,11 @@ import {
   UserIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
-import { useEffect, useMemo, useState } from 'react';
+import * as MediaLibrary from 'expo-media-library';
+import * as Sharing from 'expo-sharing';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+    ActivityIndicator,
     Modal,
     Platform,
     RefreshControl,
@@ -29,6 +32,7 @@ import { getAppTheme, GRADIENT_STOPS } from '@/constants/app-theme';
 import { useAppTheme } from '@/hooks/theme-provider';
 import { useTransactions } from '@/hooks/use-transactions';
 import { formatTransactionDate } from '@/lib/welcome-transaction';
+import { captureRef } from 'react-native-view-shot';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type TxType = 'sent' | 'received';
@@ -73,6 +77,9 @@ export default function TransactionHistoryScreen({
   const [query, setQuery] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedTx, setSelectedTx] = useState<HistoryTx | null>(null);
+  const [isSavingReceipt, setIsSavingReceipt] = useState(false);
+  const [capturingReceipt, setCapturingReceipt] = useState(false);
+  const receiptArtworkRef = useRef<View>(null);
   const historyTransactions = useMemo<HistoryTx[]>(
     () =>
       transactions.map((transaction) => ({
@@ -135,6 +142,44 @@ export default function TransactionHistoryScreen({
   const handleRefresh = () => {
     setIsRefreshing(true);
     setTimeout(() => setIsRefreshing(false), 1200);
+  };
+
+  const handleGetReceipt = async () => {
+    if (!selectedTx || isSavingReceipt) return;
+    setIsSavingReceipt(true);
+    try {
+      // Hide the close button so it isn't baked into the receipt image,
+      // then wait a frame so the pixels settle before capturing.
+      setCapturingReceipt(true);
+      await new Promise((resolve) => setTimeout(resolve, 80));
+      const uri = await captureRef(receiptArtworkRef, {
+        format: 'png',
+        quality: 1,
+        result: 'tmpfile',
+      });
+      setCapturingReceipt(false);
+
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status === 'granted') {
+        await MediaLibrary.saveToLibraryAsync(uri);
+        show({ message: 'Receipt image saved to your gallery!', variant: 'success' });
+      } else if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'image/png',
+          dialogTitle: 'Share NearbyPay receipt',
+        });
+      } else {
+        show({ message: 'Allow gallery access to save receipts.', variant: 'error' });
+      }
+    } catch (error) {
+      setCapturingReceipt(false);
+      show({
+        message: error instanceof Error ? error.message : 'Could not create receipt image.',
+        variant: 'error',
+      });
+    } finally {
+      setIsSavingReceipt(false);
+    }
   };
 
   // Status bar style is owned by (tabs)/_layout.tsx.
@@ -311,78 +356,93 @@ export default function TransactionHistoryScreen({
           <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setSelectedTx(null)} />
           {selectedTx && (
             <View style={[styles.sheet, { backgroundColor: t.cardBg }]}>
-              <View style={[styles.sheetHandle, { backgroundColor: t.cardBorder }]} />
+              {/* Captured into the receipt PNG (collapsable={false} is required
+                  on Android or the capture comes out blank) */}
+              <View
+                ref={receiptArtworkRef}
+                collapsable={false}
+                style={{ backgroundColor: t.cardBg }}>
+                <View style={[styles.sheetHandle, { backgroundColor: t.cardBorder }]} />
 
-              <View style={styles.sheetHeader}>
-                <View style={[styles.sheetIconWrap, { backgroundColor: t.pageBg }]}>
-                  <HugeiconsIcon
-                    icon={selectedTx.icon}
-                    size={22}
-                    color={selectedTx.iconColor}
-                  />
-                </View>
-                <View style={styles.sheetHeaderText}>
-                  <Text style={[styles.sheetName, { color: t.textPrimary }]}>{selectedTx.title}</Text>
-                  <Text style={[styles.sheetCategory, { color: t.textSecondary }]}>{selectedTx.channel}</Text>
-                </View>
-                <TouchableOpacity
-                  style={[styles.sheetClose, { backgroundColor: t.pageBg }]}
-                  activeOpacity={0.7}
-                  onPress={() => setSelectedTx(null)}>
-                  <HugeiconsIcon icon={Cancel01Icon} size={16} color={t.iconColor} />
-                </TouchableOpacity>
-              </View>
+                <Text style={[styles.receiptBrand, { color: t.brand }]}>NearbyPay</Text>
+                <Text style={[styles.receiptType, { color: t.textSecondary }]}>
+                  TRANSACTION RECEIPT
+                </Text>
 
-              <Text
-                style={[
-                  styles.sheetAmount,
-                  { color: selectedTx.amountColor },
-                ]}>
-                {selectedTx.amount}
-              </Text>
-
-              <View style={[styles.sheetDetails, { backgroundColor: t.inputBg, borderColor: t.cardBorder }]}>
-                <View style={[styles.sheetDetailRow, { borderBottomColor: t.cardBorder }]}>
-                  <Text style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Status</Text>
-                  <View style={styles.sheetStatusWrap}>
-                    <View
-                      style={[
-                        styles.sheetStatusDot,
-                        {
-                          backgroundColor:
-                            selectedTx.status === 'Pending' ? '#F59E0B' : '#16A34A',
-                        },
-                      ]}
+                <View style={styles.sheetHeader}>
+                  <View style={[styles.sheetIconWrap, { backgroundColor: t.pageBg }]}>
+                    <HugeiconsIcon
+                      icon={selectedTx.icon}
+                      size={22}
+                      color={selectedTx.iconColor}
                     />
-                    <Text style={[styles.sheetDetailValue, { color: t.textPrimary }]}>{selectedTx.status}</Text>
                   </View>
+                  <View style={styles.sheetHeaderText}>
+                    <Text style={[styles.sheetName, { color: t.textPrimary }]}>{selectedTx.title}</Text>
+                    <Text style={[styles.sheetCategory, { color: t.textSecondary }]}>{selectedTx.channel}</Text>
+                  </View>
+                  {!capturingReceipt && (
+                    <TouchableOpacity
+                      style={[styles.sheetClose, { backgroundColor: t.pageBg }]}
+                      activeOpacity={0.7}
+                      onPress={() => setSelectedTx(null)}>
+                      <HugeiconsIcon icon={Cancel01Icon} size={16} color={t.iconColor} />
+                    </TouchableOpacity>
+                  )}
                 </View>
-                <View style={[styles.sheetDetailRow, { borderBottomColor: t.cardBorder }]}>
-                  <Text style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Date</Text>
-                  <Text style={[styles.sheetDetailValue, { color: t.textPrimary }]}>{selectedTx.date}</Text>
-                </View>
-                <View style={[styles.sheetDetailRow, { borderBottomColor: t.cardBorder }]}>
-                  <Text style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Channel</Text>
-                  <Text style={[styles.sheetDetailValue, { color: t.textPrimary }]}>{selectedTx.channel}</Text>
-                </View>
-                <View style={[styles.sheetDetailRow, styles.sheetDetailRowLast]}>
-                  <Text style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Reference</Text>
-                  <Text style={[styles.sheetDetailValue, { color: t.textPrimary }]}>{selectedTx.reference}</Text>
+
+                <Text
+                  style={[
+                    styles.sheetAmount,
+                    { color: selectedTx.amountColor },
+                  ]}>
+                  {selectedTx.amount}
+                </Text>
+
+                <View style={[styles.sheetDetails, { backgroundColor: t.inputBg, borderColor: t.cardBorder }]}>
+                  <View style={[styles.sheetDetailRow, { borderBottomColor: t.cardBorder }]}>
+                    <Text style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Status</Text>
+                    <View style={styles.sheetStatusWrap}>
+                      <View
+                        style={[
+                          styles.sheetStatusDot,
+                          {
+                            backgroundColor:
+                              selectedTx.status === 'Pending' ? '#F59E0B' : '#16A34A',
+                          },
+                        ]}
+                      />
+                      <Text style={[styles.sheetDetailValue, { color: t.textPrimary }]}>{selectedTx.status}</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.sheetDetailRow, { borderBottomColor: t.cardBorder }]}>
+                    <Text style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Date</Text>
+                    <Text style={[styles.sheetDetailValue, { color: t.textPrimary }]}>{selectedTx.date}</Text>
+                  </View>
+                  <View style={[styles.sheetDetailRow, { borderBottomColor: t.cardBorder }]}>
+                    <Text style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Channel</Text>
+                    <Text style={[styles.sheetDetailValue, { color: t.textPrimary }]}>{selectedTx.channel}</Text>
+                  </View>
+                  <View style={[styles.sheetDetailRow, styles.sheetDetailRowLast]}>
+                    <Text style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Reference</Text>
+                    <Text style={[styles.sheetDetailValue, { color: t.textPrimary }]}>{selectedTx.reference}</Text>
+                  </View>
                 </View>
               </View>
 
               <TouchableOpacity
-                style={styles.sheetButton}
+                style={[styles.sheetButton, isSavingReceipt && { opacity: 0.7 }]}
                 activeOpacity={0.8}
-                onPress={() => {
-                  show({
-                    message: `Receipt for ${selectedTx.reference} sent to your email`,
-                    variant: 'success',
-                  });
-                  setSelectedTx(null);
-                }}>
-                <HugeiconsIcon icon={Tick02Icon} size={15} color="#FFFFFF" />
-                <Text style={styles.sheetButtonText}>Get Receipt</Text>
+                disabled={isSavingReceipt}
+                onPress={handleGetReceipt}>
+                {isSavingReceipt ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <HugeiconsIcon icon={Tick02Icon} size={15} color="#FFFFFF" />
+                    <Text style={styles.sheetButtonText}>Get Receipt</Text>
+                  </>
+                )}
               </TouchableOpacity>
             </View>
           )}
@@ -666,6 +726,20 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: '#E2E8F0',
     marginBottom: 16,
+  },
+  receiptBrand: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 18,
+    textAlign: 'center',
+    letterSpacing: -0.3,
+  },
+  receiptType: {
+    fontFamily: 'Montserrat_600SemiBold',
+    fontSize: 10,
+    textAlign: 'center',
+    letterSpacing: 1.5,
+    marginTop: 2,
+    marginBottom: 14,
   },
   sheetHeader: {
     flexDirection: 'row',
