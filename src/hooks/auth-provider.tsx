@@ -4,6 +4,13 @@ import React, { createContext, useCallback, useContext, useEffect, useState, typ
 import { hashPinWithSalt } from '@/lib/crypto';
 import { supabase } from '@/lib/supabase';
 
+/**
+ * Where the password-recovery email sends the user. This must also be
+ * allowlisted in Supabase Dashboard > Authentication > URL Configuration >
+ * Redirect URLs, or Supabase will refuse the redirect.
+ */
+export const PASSWORD_RESET_REDIRECT_URL = 'https://nearbypay.vercel.app/reset-password';
+
 export type UserProfile = {
   id: string;
   name: string;
@@ -285,7 +292,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Password Reset
   const sendPasswordReset = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase());
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+      redirectTo: PASSWORD_RESET_REDIRECT_URL,
+    });
     if (error) {
       throw new Error(error.message);
     }
