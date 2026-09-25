@@ -1,5 +1,5 @@
 import {
-    AddIcon,
+    ArrowDownToLineIcon,
     Clock01Icon,
     Home01Icon,
     Sent02Icon,
@@ -17,7 +17,7 @@ export type MainTabKey = 'home' | 'receive' | 'send' | 'history' | 'profile';
 
 const LEFT_TABS: { id: MainTabKey; label: string; icon: typeof Home01Icon }[] = [
   { id: 'home', label: 'Home', icon: Home01Icon },
-  { id: 'receive', label: 'Receive', icon: AddIcon },
+  { id: 'receive', label: 'Receive', icon: ArrowDownToLineIcon },
 ];
 
 const RIGHT_TABS: { id: MainTabKey; label: string; icon: typeof Home01Icon }[] = [
@@ -47,7 +47,12 @@ export function BottomTabs({ active, onPress }: BottomTabsProps) {
         accessibilityState={{ selected: isActive }}
         accessibilityLabel={label}>
         <View style={[styles.iconTile, isActive && { backgroundColor: t.brand }]}>
-          <HugeiconsIcon icon={icon} size={20} color={isActive ? '#FFFFFF' : t.iconColor} />
+          <HugeiconsIcon
+            icon={icon}
+            size={20}
+            color={isActive ? '#FFFFFF' : t.iconColor}
+            strokeWidth={isActive ? 2.4 : 1.8}
+          />
         </View>
         <Text style={[styles.navLabel, { color: t.iconColor }, isActive && { color: t.textPrimary }]}>
           {label}

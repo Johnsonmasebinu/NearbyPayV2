@@ -1,8 +1,8 @@
 import {
+    ArrowDownToLineIcon,
     ArrowRight01Icon,
     Calendar03Icon,
     Clock01Icon,
-    Download01Icon,
     MoreHorizontalIcon,
     Notification03Icon,
     Sent02Icon,
@@ -47,7 +47,7 @@ type StarSpec = {
 
 const QUICK_ACTIONS = [
   { id: 'send', label: 'Send', icon: Sent02Icon },
-  { id: 'receive', label: 'Receive', icon: Download01Icon },
+  { id: 'receive', label: 'Receive', icon: ArrowDownToLineIcon },
   { id: 'history', label: 'History', icon: Clock01Icon },
   { id: 'more', label: 'More', icon: MoreHorizontalIcon },
 ];
@@ -367,7 +367,7 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
                 onPress={() => onNavigate('history', tx.id)}>
                 <View style={[styles.txIconWrap, { backgroundColor: txTint[tx.type] }]}>
                   <HugeiconsIcon
-                    icon={tx.type === 'received' ? Download01Icon : UserIcon}
+                    icon={tx.type === 'received' ? ArrowDownToLineIcon : UserIcon}
                     size={18}
                     color={tx.type === 'received' ? '#16A34A' : '#2E45F4'}
                   />
