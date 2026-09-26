@@ -8,7 +8,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -24,14 +24,78 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { useToast } from '@/components/ui/toast';
 import { getAppTheme, GRADIENT_STOPS } from '@/constants/app-theme';
 import { useAppTheme } from '@/hooks/theme-provider';
 import { useDailyCheckIn, type CheckInDay } from '@/hooks/use-daily-check-in';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
-const MONDAY_SPIN_OPTIONS = [50, 100, 150];
+type SpinOption = {
+  id: string;
+  label: string;
+  amount: number;
+  isTryAgain?: boolean;
+};
+
+function getDaySpinOptions(dayName: string): SpinOption[] {
+  const d = dayName.toLowerCase();
+  if (d.includes('monday')) {
+    return [
+      { id: '1', label: '₦50', amount: 50 },
+      { id: '2', label: '₦100', amount: 100 },
+      { id: '3', label: '₦150', amount: 150 },
+      { id: '4', label: 'Try Again', amount: 0, isTryAgain: true },
+    ];
+  }
+  if (d.includes('tuesday')) {
+    return [
+      { id: '1', label: '₦100', amount: 100 },
+      { id: '2', label: '₦150', amount: 150 },
+      { id: '3', label: '₦200', amount: 200 },
+      { id: '4', label: 'Try Again', amount: 0, isTryAgain: true },
+    ];
+  }
+  if (d.includes('wednesday')) {
+    return [
+      { id: '1', label: '₦150', amount: 150 },
+      { id: '2', label: '₦200', amount: 200 },
+      { id: '3', label: '₦250', amount: 250 },
+      { id: '4', label: 'Try Again', amount: 0, isTryAgain: true },
+    ];
+  }
+  if (d.includes('thursday')) {
+    return [
+      { id: '1', label: '₦200', amount: 200 },
+      { id: '2', label: '₦250', amount: 250 },
+      { id: '3', label: '₦300', amount: 300 },
+      { id: '4', label: 'Try Again', amount: 0, isTryAgain: true },
+    ];
+  }
+  if (d.includes('friday')) {
+    return [
+      { id: '1', label: '₦250', amount: 250 },
+      { id: '2', label: '₦300', amount: 300 },
+      { id: '3', label: '₦350', amount: 350 },
+      { id: '4', label: 'Try Again', amount: 0, isTryAgain: true },
+    ];
+  }
+  if (d.includes('saturday')) {
+    return [
+      { id: '1', label: '₦300', amount: 300 },
+      { id: '2', label: '₦350', amount: 350 },
+      { id: '3', label: '₦400', amount: 400 },
+      { id: '4', label: 'Try Again', amount: 0, isTryAgain: true },
+    ];
+  }
+  // Sunday
+  return [
+    { id: '1', label: '₦350', amount: 350 },
+    { id: '2', label: '₦400', amount: 400 },
+    { id: '3', label: '₦500', amount: 500 },
+    { id: '4', label: 'Try Again', amount: 0, isTryAgain: true },
+  ];
+}
 
 export default function DailyCheckInScreen() {
   const router = useRouter();
@@ -41,76 +105,94 @@ export default function DailyCheckInScreen() {
   const { days, weekStart, isLoading, isCheckingIn, checkIn, refresh } = useDailyCheckIn();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Success Splash state
+  // Success Splash State
   const [rewardSplash, setRewardSplash] = useState<{ amount: number; reward: string } | null>(null);
   const [splashOpacity] = useState(() => new Animated.Value(0));
   const [splashScale] = useState(() => new Animated.Value(0.82));
 
-  // Monday Spin Modal state
-  const [showSpinModal, setShowSpinModal] = useState(false);
+  // Daily Spin Modal State
+  const [activeSpinDay, setActiveSpinDay] = useState<CheckInDay | null>(null);
+  const [spinOptions, setSpinOptions] = useState<SpinOption[]>([]);
   const [isSpinning, setIsSpinning] = useState(false);
-  const [displaySpinValue, setDisplaySpinValue] = useState(100);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [landedTryAgain, setLandedTryAgain] = useState(false);
+  const spinTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const availableDay = days.find((day) => day.status === 'Available');
   const completedCount = days.filter((day) => day.status === 'Completed').length;
 
-  const handleDayCheckIn = async (day: CheckInDay) => {
+  const handleOpenSpin = (day: CheckInDay) => {
     if (day.status !== 'Available') return;
-
-    if (day.isSpin || day.dayName.toLowerCase().includes('monday')) {
-      // Open interactive spin wheel on Monday
-      setShowSpinModal(true);
-      return;
-    }
-
-    try {
-      const result = await checkIn();
-      setRewardSplash(result);
-    } catch (error) {
-      show({
-        message: error instanceof Error ? error.message : 'Check-in failed. Please try again.',
-        variant: 'error',
-      });
-    }
+    const options = getDaySpinOptions(day.dayName);
+    setSpinOptions(options);
+    setActiveSpinDay(day);
+    setLandedTryAgain(false);
+    setHighlightedIndex(0);
   };
 
-  const handleSpinNow = async () => {
-    if (isSpinning) return;
+  const handleSpinReel = () => {
+    if (isSpinning || !activeSpinDay || spinOptions.length === 0) return;
     setIsSpinning(true);
+    setLandedTryAgain(false);
 
-    // Pick random prize among [50, 100, 150]
-    const chosen = MONDAY_SPIN_OPTIONS[Math.floor(Math.random() * MONDAY_SPIN_OPTIONS.length)];
+    // Pick target: 25% chance of Try Again, 75% chance of one of the cash prizes
+    const cashOptions = spinOptions.filter((o) => !o.isTryAgain);
+    const tryAgainOption = spinOptions.find((o) => o.isTryAgain);
 
-    // Fast cycling animation through options
-    let counter = 0;
-    const interval = setInterval(() => {
-      counter++;
-      setDisplaySpinValue(MONDAY_SPIN_OPTIONS[counter % MONDAY_SPIN_OPTIONS.length]);
-    }, 85);
+    const willTryAgain = Math.random() < 0.25 && !!tryAgainOption;
+    const targetOption = willTryAgain
+      ? tryAgainOption!
+      : cashOptions[Math.floor(Math.random() * cashOptions.length)];
 
-    setTimeout(async () => {
-      clearInterval(interval);
-      setDisplaySpinValue(chosen);
+    const targetIdx = spinOptions.findIndex((o) => o.id === targetOption.id);
 
-      try {
-        const result = await checkIn(chosen);
-        setShowSpinModal(false);
-        setIsSpinning(false);
-        setRewardSplash(result);
-      } catch (error) {
-        setIsSpinning(false);
-        setShowSpinModal(false);
-        show({
-          message: error instanceof Error ? error.message : 'Failed to claim spin reward.',
-          variant: 'error',
-        });
+    let currentIndex = highlightedIndex;
+    let stepCount = 0;
+    const totalSteps = 24 + targetIdx; // at least 6 full cycles before landing
+
+    if (spinTimerRef.current) clearInterval(spinTimerRef.current);
+
+    spinTimerRef.current = setInterval(() => {
+      stepCount++;
+      currentIndex = (currentIndex + 1) % spinOptions.length;
+      setHighlightedIndex(currentIndex);
+
+      if (stepCount >= totalSteps) {
+        if (spinTimerRef.current) clearInterval(spinTimerRef.current);
+        spinTimerRef.current = null;
+        setHighlightedIndex(targetIdx);
+
+        setTimeout(async () => {
+          if (targetOption.isTryAgain) {
+            setIsSpinning(false);
+            setLandedTryAgain(true);
+          } else {
+            try {
+              const res = await checkIn(targetOption.amount);
+              setIsSpinning(false);
+              setActiveSpinDay(null);
+              setRewardSplash(res);
+            } catch (err) {
+              setIsSpinning(false);
+              show({
+                message: err instanceof Error ? err.message : 'Failed to claim reward.',
+                variant: 'error',
+              });
+            }
+          }
+        }, 300);
       }
-    }, 1800);
+    }, 75);
   };
 
   useEffect(() => {
-    if (!rewardSplash) return;
+    return () => {
+      if (spinTimerRef.current) clearInterval(spinTimerRef.current);
+    };
+  }, []);
 
+  useEffect(() => {
+    if (!rewardSplash) return;
     splashOpacity.setValue(0);
     splashScale.setValue(0.82);
     Animated.parallel([
@@ -157,7 +239,7 @@ export default function DailyCheckInScreen() {
             <HugeiconsIcon icon={ArrowLeft01Icon} size={19} color={t.textPrimary} />
           </TouchableOpacity>
           <View style={styles.headerTitleWrap}>
-            <Text style={[styles.eyebrow, { color: t.brand }]}>WEEKLY REWARDS</Text>
+            <Text style={[styles.eyebrow, { color: t.brand }]}>DAILY MYSTERY REWARDS</Text>
             <Text style={[styles.title, { color: t.textPrimary }]}>Daily Check-In</Text>
           </View>
           <View style={[styles.weekIcon, { backgroundColor: t.brandTint }]}>
@@ -197,9 +279,9 @@ export default function DailyCheckInScreen() {
               <Text style={styles.heroKicker}>{weekStart ? `Week of ${weekStart}` : 'Monday — Sunday Cycle'}</Text>
             </View>
 
-            <Text style={styles.heroTitle}>Show up. Get rewarded.</Text>
+            <Text style={styles.heroTitle}>Spin each day to unlock rewards.</Text>
             <Text style={styles.heroCopy}>
-              Check in once each day to earn cash rewards. Missed days cannot be reclaimed.
+              Check-in is always by spinning! Prize figures remain hidden until you spin to reveal them.
             </Text>
 
             <View style={styles.progressTrack}>
@@ -208,41 +290,39 @@ export default function DailyCheckInScreen() {
             <Text style={styles.progressText}>{completedCount} of 7 days completed</Text>
           </View>
 
-          {/* Today's Active Check-In Card if Available */}
+          {/* Today's Active Mystery Spin Card if Available */}
           {availableDay && (
             <View style={[styles.todayCard, { backgroundColor: t.cardBg, borderColor: t.brand }]}>
               <View style={[styles.todayIcon, { backgroundColor: t.brandTint }]}>
                 <HugeiconsIcon icon={Clock01Icon} size={20} color={t.brand} />
               </View>
               <View style={styles.todayCopy}>
-                <Text style={[styles.todayEyebrow, { color: t.brand }]}>TODAY&apos;S REWARD</Text>
+                <Text style={[styles.todayEyebrow, { color: t.brand }]}>TODAY&apos;S CHECK-IN</Text>
                 <Text style={[styles.todayTitle, { color: t.textPrimary }]}>{availableDay.dayName}</Text>
                 <Text style={[styles.todayReward, { color: t.textSecondary }]}>
-                  {availableDay.isSpin ? '🎰 Spin to win ₦50 / ₦100 / ₦150' : `${availableDay.reward} Instant Credit`}
+                  Mystery Cash Reward • Spin to Reveal
                 </Text>
               </View>
               <TouchableOpacity
                 style={[styles.checkButton, { backgroundColor: t.brand }]}
-                onPress={() => handleDayCheckIn(availableDay)}
+                onPress={() => handleOpenSpin(availableDay)}
                 disabled={isCheckingIn}
                 activeOpacity={0.84}>
                 {isCheckingIn ? (
                   <ActivityIndicator color="#FFFFFF" size="small" />
                 ) : (
-                  <Text style={styles.checkButtonText}>
-                    {availableDay.isSpin ? 'Spin to Win' : 'Check In'}
-                  </Text>
+                  <Text style={styles.checkButtonText}>Spin 🎰</Text>
                 )}
               </TouchableOpacity>
             </View>
           )}
 
-          {/* Weekly Streak Schedule & Layout */}
+          {/* Weekly Streak Schedule & Mystery Statuses */}
           <View style={styles.sectionHeading}>
             <View>
               <Text style={[styles.sectionTitle, { color: t.textPrimary }]}>Weekly Reward Schedule</Text>
               <Text style={[styles.sectionSubtitle, { color: t.textSecondary }]}>
-                Monday through Sunday • Refreshes weekly
+                Monday through Sunday • Figures unlocked upon spin
               </Text>
             </View>
             <Text style={[styles.countLabel, { color: t.brand }]}>{completedCount}/7</Text>
@@ -262,7 +342,7 @@ export default function DailyCheckInScreen() {
                   isLast={index === days.length - 1}
                   theme={t}
                   isCheckingIn={isCheckingIn}
-                  onCheckIn={() => handleDayCheckIn(day)}
+                  onCheckIn={() => handleOpenSpin(day)}
                 />
               ))
             )}
@@ -274,51 +354,103 @@ export default function DailyCheckInScreen() {
         </ScrollView>
       </View>
 
-      {/* Monday Spin Reel / Wheel Modal */}
-      <Modal visible={showSpinModal} transparent animationType="fade" onRequestClose={() => !isSpinning && setShowSpinModal(false)}>
+      {/* Daily Spin Wheel / Reel Modal */}
+      <Modal
+        visible={activeSpinDay !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => !isSpinning && setActiveSpinDay(null)}>
         <View style={styles.spinModalOverlay}>
           <View style={[styles.spinCard, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
             <View style={[styles.spinHeaderBadge, { backgroundColor: t.brandTint }]}>
-              <Text style={[styles.spinBadgeText, { color: t.brand }]}>🎰 MONDAY LUCKY SPIN</Text>
+              <Text style={[styles.spinBadgeText, { color: t.brand }]}>
+                🎰 {activeSpinDay?.dayName.toUpperCase()} LUCKY SPIN
+              </Text>
             </View>
 
-            <Text style={[styles.spinTitle, { color: t.textPrimary }]}>Spin for Your Cash Prize</Text>
+            <Text style={[styles.spinTitle, { color: t.textPrimary }]}>Spin to Unlock Cash Prize</Text>
             <Text style={[styles.spinSubtitle, { color: t.textSecondary }]}>
-              Every Monday brings a fresh spin. Win ₦50, ₦100, or ₦150!
+              Figures are only revealed on the wheel. Spin now to see what you win!
             </Text>
 
-            {/* Spin Prize Display Reel */}
-            <View style={[styles.spinReelBox, { backgroundColor: isDark ? '#0C1326' : '#F1F5F9', borderColor: t.brand }]}>
-              <Text style={styles.spinCurrency}>₦</Text>
-              <Text style={[styles.spinValueNumber, { color: t.brand }]}>{displaySpinValue}</Text>
-            </View>
-
-            {/* Options display */}
-            <View style={styles.spinPillsRow}>
-              {MONDAY_SPIN_OPTIONS.map((val) => (
-                <View
-                  key={val}
-                  style={[
-                    styles.spinPillItem,
-                    {
-                      backgroundColor: displaySpinValue === val ? t.brand : t.cardBg,
-                      borderColor: displaySpinValue === val ? t.brand : t.cardBorder,
-                    },
-                  ]}>
-                  <Text
-                    style={[
-                      styles.spinPillText,
-                      { color: displaySpinValue === val ? '#FFFFFF' : t.textSecondary },
-                    ]}>
-                    ₦{val}
+            {/* Central Animated Reel Display */}
+            <View
+              style={[
+                styles.spinReelBox,
+                {
+                  backgroundColor: isDark ? '#0C1326' : '#F1F5F9',
+                  borderColor: spinOptions[highlightedIndex]?.isTryAgain ? '#F59E0B' : t.brand,
+                },
+              ]}>
+              {spinOptions[highlightedIndex]?.isTryAgain ? (
+                <View style={styles.tryAgainReelWrap}>
+                  <Text style={styles.tryAgainIcon}>🔄</Text>
+                  <Text style={styles.tryAgainReelText}>Try Again</Text>
+                </View>
+              ) : (
+                <View style={styles.cashReelWrap}>
+                  <Text style={styles.spinCurrency}>₦</Text>
+                  <Text style={[styles.spinValueNumber, { color: t.brand }]}>
+                    {spinOptions[highlightedIndex]?.amount ?? '???'}
                   </Text>
                 </View>
-              ))}
+              )}
             </View>
 
+            {/* Options Strip Preview */}
+            <Text style={[styles.optionsLabel, { color: t.textSecondary }]}>Available Outcomes Today:</Text>
+            <View style={styles.spinPillsRow}>
+              {spinOptions.map((opt, idx) => {
+                const isSelected = highlightedIndex === idx;
+                return (
+                  <View
+                    key={opt.id}
+                    style={[
+                      styles.spinPillItem,
+                      {
+                        backgroundColor: isSelected
+                          ? opt.isTryAgain
+                            ? '#F59E0B'
+                            : t.brand
+                          : t.cardBg,
+                        borderColor: isSelected
+                          ? opt.isTryAgain
+                            ? '#F59E0B'
+                            : t.brand
+                          : t.cardBorder,
+                      },
+                    ]}>
+                    <Text
+                      style={[
+                        styles.spinPillText,
+                        {
+                          color: isSelected
+                            ? '#FFFFFF'
+                            : opt.isTryAgain
+                            ? '#F59E0B'
+                            : t.textPrimary,
+                        },
+                      ]}>
+                      {opt.label}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+
+            {/* If landed on Try Again banner */}
+            {landedTryAgain && (
+              <View style={styles.tryAgainBanner}>
+                <Text style={styles.tryAgainBannerText}>
+                  Almost had it! You got &quot;Try Again&quot;. Spin once more! 🔄
+                </Text>
+              </View>
+            )}
+
+            {/* Spin CTA Button */}
             <TouchableOpacity
               style={[styles.spinActionBtn, isSpinning && { opacity: 0.7 }]}
-              onPress={handleSpinNow}
+              onPress={handleSpinReel}
               disabled={isSpinning}
               activeOpacity={0.85}>
               {isSpinning ? (
@@ -327,16 +459,18 @@ export default function DailyCheckInScreen() {
                   <Text style={styles.spinActionBtnText}>Spinning...</Text>
                 </View>
               ) : (
-                <Text style={styles.spinActionBtnText}>Spin Now 🎰</Text>
+                <Text style={styles.spinActionBtnText}>
+                  {landedTryAgain ? 'Spin Again 🔄' : 'Spin to Reveal 🎰'}
+                </Text>
               )}
             </TouchableOpacity>
 
             {!isSpinning && (
               <TouchableOpacity
                 style={styles.spinCloseBtn}
-                onPress={() => setShowSpinModal(false)}
+                onPress={() => setActiveSpinDay(null)}
                 activeOpacity={0.7}>
-                <Text style={[styles.spinCloseText, { color: t.muted }]}>Close</Text>
+                <Text style={[styles.spinCloseText, { color: t.muted }]}>Cancel</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -357,7 +491,7 @@ export default function DailyCheckInScreen() {
               <HugeiconsIcon icon={CheckmarkCircle02Icon} size={42} color={t.success} />
             </View>
             <Text style={[styles.rewardEyebrow, { color: t.success }]}>CHECK-IN COMPLETE</Text>
-            <Text style={[styles.rewardTitle, { color: t.textPrimary }]}>You got</Text>
+            <Text style={[styles.rewardTitle, { color: t.textPrimary }]}>You won</Text>
             <Text style={[styles.rewardAmount, { color: t.brand }]}>
               ₦{rewardSplash?.amount.toLocaleString('en-NG')}
             </Text>
@@ -436,7 +570,7 @@ function DayRow({
         )}
       </View>
 
-      {/* Info: Day name & reward */}
+      {/* Info: Day name & Mystery or Won amount */}
       <View style={styles.dayInfo}>
         <View style={styles.dayNameRow}>
           <Text style={[styles.dayName, { color: t.textPrimary }]}>{day.dayName}</Text>
@@ -446,12 +580,12 @@ function DayRow({
             </View>
           )}
         </View>
-        <Text style={[styles.dayReward, { color: t.textSecondary }]}>
-          {isCompleted ? day.reward : day.reward}
+        <Text style={[styles.dayReward, { color: isCompleted ? t.success : t.textSecondary }]}>
+          {isCompleted ? day.reward : 'Mystery Reward • Spin to Reveal'}
         </Text>
       </View>
 
-      {/* Status or Check In Button */}
+      {/* Status or Spin Button */}
       <View style={styles.dayStatusWrap}>
         {isAvailable ? (
           <TouchableOpacity
@@ -462,7 +596,7 @@ function DayRow({
             {isCheckingIn ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={styles.rowCheckInBtnText}>{day.isSpin ? 'Spin 🎰' : 'Check In'}</Text>
+              <Text style={styles.rowCheckInBtnText}>Spin 🎰</Text>
             )}
           </TouchableOpacity>
         ) : isCompleted ? (
@@ -476,7 +610,7 @@ function DayRow({
           </View>
         ) : (
           <View style={[styles.statusPill, { backgroundColor: t.chipBg }]}>
-            <Text style={[styles.statusPillText, { color: t.muted }]}>Upcoming</Text>
+            <Text style={[styles.statusPillText, { color: t.muted }]}>Locked 🔒</Text>
           </View>
         )}
       </View>
@@ -539,7 +673,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   heroKicker: { fontFamily: 'Montserrat_600SemiBold', color: 'rgba(255,255,255,0.78)', fontSize: 11 },
-  heroTitle: { fontFamily: 'Montserrat_700Bold', color: '#FFFFFF', fontSize: 23, marginTop: 18 },
+  heroTitle: { fontFamily: 'Montserrat_700Bold', color: '#FFFFFF', fontSize: 22, marginTop: 18 },
   heroCopy: {
     fontFamily: 'Montserrat_400Regular',
     color: 'rgba(255,255,255,0.76)',
@@ -631,7 +765,7 @@ const styles = StyleSheet.create({
   footnote: { fontFamily: 'Montserrat_400Regular', fontSize: 10, textAlign: 'center', marginTop: 16 },
   spinModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(6, 12, 34, 0.78)',
+    backgroundColor: 'rgba(6, 12, 34, 0.82)',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
@@ -641,7 +775,7 @@ const styles = StyleSheet.create({
     maxWidth: 360,
     borderRadius: 26,
     borderWidth: 1,
-    paddingHorizontal: 22,
+    paddingHorizontal: 20,
     paddingTop: 24,
     paddingBottom: 20,
     alignItems: 'center',
@@ -663,17 +797,34 @@ const styles = StyleSheet.create({
   },
   spinReelBox: {
     width: '100%',
-    height: 100,
-    borderRadius: 18,
+    height: 106,
+    borderRadius: 20,
     borderWidth: 2,
     marginVertical: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tryAgainReelWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tryAgainIcon: {
+    fontSize: 28,
+  },
+  tryAgainReelText: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 22,
+    color: '#F59E0B',
+    marginTop: 4,
+  },
+  cashReelWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
   spinCurrency: {
     fontFamily: 'Montserrat_700Bold',
-    fontSize: 24,
+    fontSize: 26,
     color: '#94A3B8',
     marginRight: 4,
   },
@@ -682,18 +833,39 @@ const styles = StyleSheet.create({
     fontSize: 48,
     letterSpacing: -1,
   },
+  optionsLabel: {
+    fontFamily: 'Montserrat_500Medium',
+    fontSize: 10.5,
+    marginBottom: 8,
+  },
   spinPillsRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 20,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 16,
   },
   spinPillItem: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 11,
     paddingVertical: 6,
     borderRadius: 10,
     borderWidth: 1,
   },
-  spinPillText: { fontFamily: 'Montserrat_700Bold', fontSize: 12 },
+  spinPillText: { fontFamily: 'Montserrat_700Bold', fontSize: 11.5 },
+  tryAgainBanner: {
+    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    marginBottom: 14,
+    width: '100%',
+  },
+  tryAgainBannerText: {
+    fontFamily: 'Montserrat_600SemiBold',
+    fontSize: 11,
+    color: '#D97706',
+    textAlign: 'center',
+  },
   spinActionBtn: {
     width: '100%',
     height: 48,

@@ -297,16 +297,14 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
             <View style={styles.checkInPromptCopy}>
               <Text style={[styles.checkInPromptEyebrow, { color: t.brand }]}>DAILY CHECK-IN AVAILABLE</Text>
               <Text style={[styles.checkInPromptTitle, { color: t.textPrimary }]}>
-                {availableCheckIn.isSpin ? 'Spin to win ₦50 - ₦150 today!' : `Claim your ${availableCheckIn.reward} reward today!`}
+                Spin to reveal today&apos;s mystery reward!
               </Text>
               <Text style={[styles.checkInPromptReward, { color: t.textSecondary }]}>
-                {availableCheckIn.dayName}&apos;s reward is waiting for you
+                {availableCheckIn.dayName}&apos;s reward is ready • Spin to unlock
               </Text>
             </View>
             <View style={[styles.checkInPromptButton, { backgroundColor: t.brand }]}>
-              <Text style={styles.checkInPromptButtonText}>
-                {availableCheckIn.isSpin ? 'Spin 🎰' : 'Check In'}
-              </Text>
+              <Text style={styles.checkInPromptButtonText}>Spin 🎰</Text>
             </View>
           </TouchableOpacity>
         )}
