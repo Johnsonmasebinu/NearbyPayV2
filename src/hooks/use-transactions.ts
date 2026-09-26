@@ -12,13 +12,14 @@ export type Transaction = {
   status: 'Completed' | 'Pending';
   reference: string;
   channel: string;
+  description?: string;
   created_at: string;
 };
 
 async function fetchTransactions(userId: string): Promise<Transaction[]> {
   const { data, error } = await supabase
     .from('transactions')
-    .select('id, title, category, amount, type, status, reference, channel, created_at')
+    .select('id, title, category, amount, type, status, reference, channel, description, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
@@ -36,6 +37,7 @@ async function fetchTransactions(userId: string): Promise<Transaction[]> {
     status: row.status,
     reference: row.reference,
     channel: row.channel,
+    description: row.description || '',
     created_at: row.created_at,
   }));
 }
@@ -82,18 +84,21 @@ export function useTransactions() {
       }
     })();
 
+    const channelId = `tx_${user.id}_${Math.random().toString(36).slice(2, 9)}_${Date.now()}`;
     const channel = supabase
-      .channel(`transactions:${user.id}:${Date.now()}`)
+      .channel(channelId)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'transactions', filter: `user_id=eq.${user.id}` },
-        () => loadTransactions(),
+        () => {
+          void loadTransactions();
+        },
       )
       .subscribe();
 
     return () => {
       isMounted = false;
-      supabase.removeChannel(channel);
+      void supabase.removeChannel(channel);
     };
   }, [loadTransactions, user]);
 

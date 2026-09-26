@@ -2,13 +2,16 @@ import {
   ArrowLeft01Icon,
   Calendar03Icon,
   Cancel01Icon,
+  Clock01Icon,
   Download01Icon,
   FilterHorizontalIcon,
   Search01Icon,
+  Share01Icon,
   Tick02Icon,
   UserIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
+import { Image } from 'expo-image';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -41,6 +44,7 @@ type HistoryTx = {
   id: string;
   title: string;
   category: string;
+  description: string;
   date: string;
   dayGroup: string;
   amount: string;
@@ -78,7 +82,7 @@ export default function TransactionHistoryScreen({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedTx, setSelectedTx] = useState<HistoryTx | null>(null);
   const [isSavingReceipt, setIsSavingReceipt] = useState(false);
-  const [capturingReceipt, setCapturingReceipt] = useState(false);
+  const [isSharingReceipt, setIsSharingReceipt] = useState(false);
   const receiptArtworkRef = useRef<View>(null);
   const historyTransactions = useMemo<HistoryTx[]>(
     () =>
@@ -86,6 +90,7 @@ export default function TransactionHistoryScreen({
         id: transaction.id,
         title: transaction.title,
         category: transaction.category,
+        description: transaction.description || transaction.channel || transaction.title,
         date: formatTransactionDate(transaction.created_at),
         dayGroup: new Date(transaction.created_at).toDateString() === new Date().toDateString() ? 'Today' : new Date(transaction.created_at).toLocaleDateString(),
         amount: `${transaction.type === 'received' ? '+' : '-'} ₦${transaction.amount.toLocaleString('en-NG')}`,
@@ -117,7 +122,8 @@ export default function TransactionHistoryScreen({
       const matchesQuery =
         q.length === 0 ||
         tx.title.toLowerCase().includes(q) ||
-        tx.category.toLowerCase().includes(q);
+        tx.category.toLowerCase().includes(q) ||
+        tx.description.toLowerCase().includes(q);
       return matchesFilter && matchesQuery;
     });
   }, [filter, historyTransactions, query]);
@@ -144,20 +150,16 @@ export default function TransactionHistoryScreen({
     setTimeout(() => setIsRefreshing(false), 1200);
   };
 
-  const handleGetReceipt = async () => {
+  const handleDownloadReceipt = async () => {
     if (!selectedTx || isSavingReceipt) return;
     setIsSavingReceipt(true);
     try {
-      // Hide the close button so it isn't baked into the receipt image,
-      // then wait a frame so the pixels settle before capturing.
-      setCapturingReceipt(true);
-      await new Promise((resolve) => setTimeout(resolve, 80));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       const uri = await captureRef(receiptArtworkRef, {
         format: 'png',
         quality: 1,
         result: 'tmpfile',
       });
-      setCapturingReceipt(false);
 
       const { status } = await MediaLibrary.requestPermissionsAsync();
       if (status === 'granted') {
@@ -166,19 +168,47 @@ export default function TransactionHistoryScreen({
       } else if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri, {
           mimeType: 'image/png',
-          dialogTitle: 'Share NearbyPay receipt',
+          dialogTitle: 'Save NearbyPay Receipt',
         });
       } else {
-        show({ message: 'Allow gallery access to save receipts.', variant: 'error' });
+        show({ message: 'Gallery permission required to save receipts.', variant: 'error' });
       }
     } catch (error) {
-      setCapturingReceipt(false);
       show({
         message: error instanceof Error ? error.message : 'Could not create receipt image.',
         variant: 'error',
       });
     } finally {
       setIsSavingReceipt(false);
+    }
+  };
+
+  const handleShareReceipt = async () => {
+    if (!selectedTx || isSharingReceipt) return;
+    setIsSharingReceipt(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      const uri = await captureRef(receiptArtworkRef, {
+        format: 'png',
+        quality: 1,
+        result: 'tmpfile',
+      });
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'image/png',
+          dialogTitle: 'Share NearbyPay Receipt',
+        });
+      } else {
+        show({ message: 'Sharing not supported on this device.', variant: 'error' });
+      }
+    } catch (error) {
+      show({
+        message: error instanceof Error ? error.message : 'Could not share receipt image.',
+        variant: 'error',
+      });
+    } finally {
+      setIsSharingReceipt(false);
     }
   };
 
@@ -356,94 +386,177 @@ export default function TransactionHistoryScreen({
           <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setSelectedTx(null)} />
           {selectedTx && (
             <View style={[styles.sheet, { backgroundColor: t.cardBg }]}>
-              {/* Captured into the receipt PNG (collapsable={false} is required
-                  on Android or the capture comes out blank) */}
-              <View
-                ref={receiptArtworkRef}
-                collapsable={false}
-                style={{ backgroundColor: t.cardBg }}>
-                <View style={[styles.sheetHandle, { backgroundColor: t.cardBorder }]} />
+              <View style={[styles.sheetHandle, { backgroundColor: t.cardBorder }]} />
 
-                <Text style={[styles.receiptBrand, { color: t.brand }]}>NearbyPay</Text>
-                <Text style={[styles.receiptType, { color: t.textSecondary }]}>
-                  TRANSACTION RECEIPT
-                </Text>
-
-                <View style={styles.sheetHeader}>
-                  <View style={[styles.sheetIconWrap, { backgroundColor: t.pageBg }]}>
-                    <HugeiconsIcon
-                      icon={selectedTx.icon}
-                      size={22}
-                      color={selectedTx.iconColor}
-                    />
-                  </View>
-                  <View style={styles.sheetHeaderText}>
-                    <Text style={[styles.sheetName, { color: t.textPrimary }]}>{selectedTx.title}</Text>
-                    <Text style={[styles.sheetCategory, { color: t.textSecondary }]}>{selectedTx.channel}</Text>
-                  </View>
-                  {!capturingReceipt && (
-                    <TouchableOpacity
-                      style={[styles.sheetClose, { backgroundColor: t.pageBg }]}
-                      activeOpacity={0.7}
-                      onPress={() => setSelectedTx(null)}>
-                      <HugeiconsIcon icon={Cancel01Icon} size={16} color={t.iconColor} />
-                    </TouchableOpacity>
-                  )}
-                </View>
-
-                <Text
-                  style={[
-                    styles.sheetAmount,
-                    { color: selectedTx.amountColor },
-                  ]}>
-                  {selectedTx.amount}
-                </Text>
-
-                <View style={[styles.sheetDetails, { backgroundColor: t.inputBg, borderColor: t.cardBorder }]}>
-                  <View style={[styles.sheetDetailRow, { borderBottomColor: t.cardBorder }]}>
-                    <Text style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Status</Text>
-                    <View style={styles.sheetStatusWrap}>
-                      <View
-                        style={[
-                          styles.sheetStatusDot,
-                          {
-                            backgroundColor:
-                              selectedTx.status === 'Pending' ? '#F59E0B' : '#16A34A',
-                          },
-                        ]}
-                      />
-                      <Text style={[styles.sheetDetailValue, { color: t.textPrimary }]}>{selectedTx.status}</Text>
-                    </View>
-                  </View>
-                  <View style={[styles.sheetDetailRow, { borderBottomColor: t.cardBorder }]}>
-                    <Text style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Date</Text>
-                    <Text style={[styles.sheetDetailValue, { color: t.textPrimary }]}>{selectedTx.date}</Text>
-                  </View>
-                  <View style={[styles.sheetDetailRow, { borderBottomColor: t.cardBorder }]}>
-                    <Text style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Channel</Text>
-                    <Text style={[styles.sheetDetailValue, { color: t.textPrimary }]}>{selectedTx.channel}</Text>
-                  </View>
-                  <View style={[styles.sheetDetailRow, styles.sheetDetailRowLast]}>
-                    <Text style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Reference</Text>
-                    <Text style={[styles.sheetDetailValue, { color: t.textPrimary }]}>{selectedTx.reference}</Text>
-                  </View>
-                </View>
+              <View style={styles.sheetTopRow}>
+                <Text style={[styles.sheetTopTitle, { color: t.textPrimary }]}>Transaction Receipt</Text>
+                <TouchableOpacity
+                  style={[styles.sheetClose, { backgroundColor: t.pageBg }]}
+                  activeOpacity={0.7}
+                  onPress={() => setSelectedTx(null)}>
+                  <HugeiconsIcon icon={Cancel01Icon} size={16} color={t.iconColor} />
+                </TouchableOpacity>
               </View>
 
-              <TouchableOpacity
-                style={[styles.sheetButton, isSavingReceipt && { opacity: 0.7 }]}
-                activeOpacity={0.8}
-                disabled={isSavingReceipt}
-                onPress={handleGetReceipt}>
-                {isSavingReceipt ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <>
-                    <HugeiconsIcon icon={Tick02Icon} size={15} color="#FFFFFF" />
-                    <Text style={styles.sheetButtonText}>Get Receipt</Text>
-                  </>
-                )}
-              </TouchableOpacity>
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.receiptScrollArea}>
+                {/* Captured into the receipt PNG (collapsable={false} is required
+                    on Android or the capture comes out blank) */}
+                <View
+                  ref={receiptArtworkRef}
+                  collapsable={false}
+                  style={[
+                    styles.receiptCard,
+                    {
+                      backgroundColor: isDark ? '#0D1527' : '#FFFFFF',
+                      borderColor: isDark ? '#1E293B' : '#E2E8F0',
+                    },
+                  ]}>
+                  {/* Brand & Logo Header */}
+                  <View style={styles.receiptHeader}>
+                    <Image
+                      source={require('@/assets/images/logo/logo.png')}
+                      style={styles.receiptLogo}
+                      contentFit="contain"
+                    />
+                    <Text style={[styles.receiptBrand, { color: t.brand }]}>NearbyPay</Text>
+                    <View style={[styles.receiptPill, { backgroundColor: t.brandTint }]}>
+                      <Text style={[styles.receiptType, { color: t.brand }]}>OFFICIAL PAYMENT RECEIPT</Text>
+                    </View>
+                  </View>
+
+                  {/* Amount & Status Badge */}
+                  <View style={styles.receiptAmountBox}>
+                    <Text style={[styles.receiptAmountLabel, { color: t.textSecondary }]}>Amount Transferred</Text>
+                    <Text style={[styles.receiptAmount, { color: selectedTx.amountColor }]}>
+                      {selectedTx.amount}
+                    </Text>
+                    <View
+                      style={[
+                        styles.receiptStatusBadge,
+                        {
+                          backgroundColor:
+                            selectedTx.status === 'Completed'
+                              ? isDark ? 'rgba(34, 197, 94, 0.16)' : '#DCFCE7'
+                              : isDark ? 'rgba(245, 158, 11, 0.16)' : '#FEF3C7',
+                        },
+                      ]}>
+                      <HugeiconsIcon
+                        icon={selectedTx.status === 'Completed' ? Tick02Icon : Clock01Icon}
+                        size={12}
+                        color={selectedTx.status === 'Completed' ? '#16A34A' : '#D97706'}
+                      />
+                      <Text
+                        style={[
+                          styles.receiptStatusText,
+                          { color: selectedTx.status === 'Completed' ? '#16A34A' : '#D97706' },
+                        ]}>
+                        Payment {selectedTx.status}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Receipt Details Breakdown */}
+                  <View
+                    style={[
+                      styles.sheetDetails,
+                      {
+                        backgroundColor: isDark ? '#131D33' : '#F8FAFC',
+                        borderColor: isDark ? '#1E293B' : '#E2E8F0',
+                      },
+                    ]}>
+                    <View style={[styles.sheetDetailRow, { borderBottomColor: isDark ? '#1E293B' : '#E2E8F0' }]}>
+                      <Text style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Transaction Type</Text>
+                      <Text style={[styles.sheetDetailValue, { color: t.textPrimary }]}>
+                        {selectedTx.type === 'received' ? 'Money In (Credit)' : 'Money Out (Debit)'}
+                      </Text>
+                    </View>
+
+                    <View style={[styles.sheetDetailRow, { borderBottomColor: isDark ? '#1E293B' : '#E2E8F0' }]}>
+                      <Text style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Title</Text>
+                      <Text
+                        style={[styles.sheetDetailValue, { color: t.textPrimary, flex: 1, textAlign: 'right' }]}
+                        numberOfLines={2}>
+                        {selectedTx.title}
+                      </Text>
+                    </View>
+
+                    <View style={[styles.sheetDetailRow, { borderBottomColor: isDark ? '#1E293B' : '#E2E8F0' }]}>
+                      <Text style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Description</Text>
+                      <Text
+                        style={[styles.sheetDetailValue, { color: t.textPrimary, flex: 1, textAlign: 'right' }]}
+                        numberOfLines={2}>
+                        {selectedTx.description || selectedTx.title}
+                      </Text>
+                    </View>
+
+                    <View style={[styles.sheetDetailRow, { borderBottomColor: isDark ? '#1E293B' : '#E2E8F0' }]}>
+                      <Text style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Payment Channel</Text>
+                      <Text style={[styles.sheetDetailValue, { color: t.textPrimary }]}>{selectedTx.channel}</Text>
+                    </View>
+
+                    <View style={[styles.sheetDetailRow, { borderBottomColor: isDark ? '#1E293B' : '#E2E8F0' }]}>
+                      <Text style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Date & Time</Text>
+                      <Text style={[styles.sheetDetailValue, { color: t.textPrimary }]}>{selectedTx.date}</Text>
+                    </View>
+
+                    <View style={[styles.sheetDetailRow, styles.sheetDetailRowLast]}>
+                      <Text style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Reference No.</Text>
+                      <Text
+                        style={[
+                          styles.sheetDetailValue,
+                          { color: t.textPrimary, fontFamily: 'Montserrat_700Bold', fontSize: 10.5 },
+                        ]}>
+                        {selectedTx.reference}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Security Footer Seal */}
+                  <View style={styles.receiptSecurityFooter}>
+                    <HugeiconsIcon icon={Tick02Icon} size={11} color={t.muted} />
+                    <Text style={[styles.receiptSecurityText, { color: t.muted }]}>
+                      Verified by NearbyPay • Instant Settlement
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Action Buttons: Download Receipt & Share Receipt */}
+                <View style={styles.receiptActionsRow}>
+                  <TouchableOpacity
+                    style={[styles.receiptActionButton, styles.downloadButton, isSavingReceipt && { opacity: 0.7 }]}
+                    activeOpacity={0.8}
+                    disabled={isSavingReceipt}
+                    onPress={handleDownloadReceipt}>
+                    {isSavingReceipt ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <>
+                        <HugeiconsIcon icon={Download01Icon} size={16} color="#FFFFFF" />
+                        <Text style={styles.receiptActionText}>Download Image</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.receiptActionButton,
+                      { backgroundColor: t.cardBg, borderColor: t.cardBorder, borderWidth: 1 },
+                      isSharingReceipt && { opacity: 0.7 },
+                    ]}
+                    activeOpacity={0.8}
+                    disabled={isSharingReceipt}
+                    onPress={handleShareReceipt}>
+                    {isSharingReceipt ? (
+                      <ActivityIndicator size="small" color={t.textPrimary} />
+                    ) : (
+                      <>
+                        <HugeiconsIcon icon={Share01Icon} size={16} color={t.textPrimary} />
+                        <Text style={[styles.receiptActionText, { color: t.textPrimary }]}>Share</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
             </View>
           )}
         </View>
@@ -710,93 +823,126 @@ const styles = StyleSheet.create({
   },
   sheet: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 18,
     paddingTop: 10,
-    paddingBottom: 28,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
     maxWidth: 440,
     width: '100%',
     alignSelf: 'center',
+    maxHeight: '92%',
   },
   sheetHandle: {
     alignSelf: 'center',
-    width: 40,
+    width: 38,
     height: 4,
     borderRadius: 2,
     backgroundColor: '#E2E8F0',
-    marginBottom: 16,
+    marginBottom: 10,
   },
-  receiptBrand: {
-    fontFamily: 'Montserrat_700Bold',
-    fontSize: 18,
-    textAlign: 'center',
-    letterSpacing: -0.3,
-  },
-  receiptType: {
-    fontFamily: 'Montserrat_600SemiBold',
-    fontSize: 10,
-    textAlign: 'center',
-    letterSpacing: 1.5,
-    marginTop: 2,
-    marginBottom: 14,
-  },
-  sheetHeader: {
+  sheetTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+    marginBottom: 12,
   },
-  sheetIconWrap: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: '#EEF3FC',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sheetHeaderText: {
-    flex: 1,
-  },
-  sheetName: {
+  sheetTopTitle: {
     fontFamily: 'Montserrat_700Bold',
-    fontSize: 15,
-    color: '#0A1E3C',
-  },
-  sheetCategory: {
-    fontFamily: 'Montserrat_400Regular',
-    fontSize: 11,
-    color: '#64748B',
-    marginTop: 2,
+    fontSize: 16,
   },
   sheetClose: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sheetAmount: {
+  receiptScrollArea: {
+    paddingBottom: 16,
+  },
+  receiptCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 16,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: { shadowColor: '#1E2B6B', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 14 },
+      android: { elevation: 3 },
+      web: { shadowColor: '#1E2B6B', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 14 },
+    }),
+  },
+  receiptHeader: {
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  receiptLogo: {
+    width: 44,
+    height: 44,
+    marginBottom: 6,
+  },
+  receiptBrand: {
     fontFamily: 'Montserrat_700Bold',
-    fontSize: 28,
+    fontSize: 19,
+    textAlign: 'center',
+    letterSpacing: -0.3,
+  },
+  receiptPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 8,
+    marginTop: 4,
+  },
+  receiptType: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 9.5,
+    textAlign: 'center',
+    letterSpacing: 1.2,
+  },
+  receiptAmountBox: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  receiptAmountLabel: {
+    fontFamily: 'Montserrat_500Medium',
+    fontSize: 11,
+    marginBottom: 4,
+  },
+  receiptAmount: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 30,
     letterSpacing: -1,
-    marginTop: 16,
+  },
+  receiptStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    marginTop: 8,
+  },
+  receiptStatusText: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 11,
   },
   sheetDetails: {
-    marginTop: 16,
+    width: '100%',
     borderRadius: 14,
-    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.7)',
     paddingHorizontal: 14,
+    marginBottom: 14,
   },
   sheetDetailRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 11,
+    paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(226, 232, 240, 0.7)',
   },
   sheetDetailRowLast: {
     borderBottomWidth: 0,
@@ -804,41 +950,47 @@ const styles = StyleSheet.create({
   sheetDetailLabel: {
     fontFamily: 'Montserrat_500Medium',
     fontSize: 11,
-    color: '#64748B',
   },
   sheetDetailValue: {
     fontFamily: 'Montserrat_600SemiBold',
     fontSize: 11,
-    color: '#0A1E3C',
   },
-  sheetStatusWrap: {
+  receiptSecurityFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    paddingTop: 4,
   },
-  sheetStatusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+  receiptSecurityText: {
+    fontFamily: 'Montserrat_500Medium',
+    fontSize: 10,
   },
-  sheetButton: {
+  receiptActionsRow: {
+    flexDirection: 'row',
+    gap: 12,
     marginTop: 16,
-    backgroundColor: '#2E45F4',
-    borderRadius: 16,
-    paddingVertical: 14,
+    width: '100%',
+  },
+  receiptActionButton: {
+    flex: 1,
+    height: 48,
+    borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 8,
+  },
+  downloadButton: {
+    backgroundColor: '#2E45F4',
     ...Platform.select({
-      ios: { shadowColor: '#2E45F4', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.25, shadowRadius: 9 },
+      ios: { shadowColor: '#2E45F4', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 8 },
       android: { elevation: 3 },
-      web: { shadowColor: '#2E45F4', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.25, shadowRadius: 9 },
+      web: { shadowColor: '#2E45F4', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 8 },
     }),
   },
-  sheetButtonText: {
+  receiptActionText: {
     fontFamily: 'Montserrat_700Bold',
-    fontSize: 13,
+    fontSize: 12.5,
     color: '#FFFFFF',
   },
 });

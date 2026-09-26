@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HomeDashboard } from '@/components/home-dashboard';
 import { getAppTheme, HERO_STOPS } from '@/constants/app-theme';
@@ -10,11 +10,12 @@ export default function HomeTab() {
   const router = useRouter();
   const { isDark } = useAppTheme();
   const t = getAppTheme(isDark);
+  const insets = useSafeAreaInsets();
 
   return (
-    // Hero-colored backdrop so the status-bar strip blends into the dark header.
-    // Status bar style is owned by (tabs)/_layout.tsx (always "light" on home).
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: HERO_STOPS.from }]} edges={['top']}>
+    <View style={[styles.root, { backgroundColor: t.pageBg }]}>
+      {/* Top status bar inset colored with hero background to blend seamlessly with dark header */}
+      <View style={{ height: insets.top, backgroundColor: HERO_STOPS.from }} />
       <View style={[styles.container, { backgroundColor: t.pageBg }]}>
         <HomeDashboard
           onNavigate={(tab, transactionId) => {
@@ -30,11 +31,11 @@ export default function HomeTab() {
           }}
         />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
+  root: { flex: 1 },
   container: { flex: 1, width: '100%', maxWidth: 440, alignSelf: 'center' },
 });

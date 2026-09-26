@@ -62,7 +62,7 @@ export function BottomTabs({ active, onPress }: BottomTabsProps) {
   };
 
   return (
-    <View style={styles.bottomNavWrap}>
+    <View style={[styles.bottomNavWrap, { backgroundColor: t.pageBg }]}>
       <View
         style={[
           styles.bottomNav,

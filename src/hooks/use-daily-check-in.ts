@@ -10,12 +10,16 @@ export type CheckInDay = {
   status: CheckInStatus;
   reward: string;
   amount: number | null;
+  isSpin?: boolean;
+  isToday?: boolean;
 };
 
 type CheckInResponse = {
   success?: boolean;
   error?: string;
   weekStart?: string;
+  currentDate?: string;
+  currentDayName?: string;
   days?: CheckInDay[];
   amount?: number;
   reward?: string;
@@ -53,10 +57,12 @@ export function useDailyCheckIn() {
       .finally(() => setIsLoading(false));
   }, []);
 
-  const checkIn = async () => {
+  const checkIn = async (spinChoice?: number) => {
     setIsCheckingIn(true);
     try {
-      const { data, error } = await supabase.rpc('check_in_today');
+      const { data, error } = await supabase.rpc('check_in_today', {
+        p_spin_choice: spinChoice ?? null,
+      });
       if (error) throw new Error(error.message);
 
       const result = data as CheckInResponse;

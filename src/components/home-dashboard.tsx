@@ -177,9 +177,9 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
         <RefreshControl
           refreshing={isRefreshing}
           onRefresh={handleRefresh}
-          tintColor={t.brand}
-          colors={[t.brand]}
-          progressBackgroundColor={t.pageBg}
+          tintColor="#FFFFFF"
+          colors={['#FFFFFF']}
+          progressBackgroundColor="#1C1A55"
         />
       }>
       {/* Top overscroll guard so pulling down never shows white gap/seam */}
@@ -296,11 +296,17 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
             </View>
             <View style={styles.checkInPromptCopy}>
               <Text style={[styles.checkInPromptEyebrow, { color: t.brand }]}>DAILY CHECK-IN AVAILABLE</Text>
-              <Text style={[styles.checkInPromptTitle, { color: t.textPrimary }]}>Spin to reveal today&apos;s reward</Text>
-              <Text style={[styles.checkInPromptReward, { color: t.textSecondary }]}>A surprise reward is waiting</Text>
+              <Text style={[styles.checkInPromptTitle, { color: t.textPrimary }]}>
+                {availableCheckIn.isSpin ? 'Spin to win ₦50 - ₦150 today!' : `Claim your ${availableCheckIn.reward} reward today!`}
+              </Text>
+              <Text style={[styles.checkInPromptReward, { color: t.textSecondary }]}>
+                {availableCheckIn.dayName}&apos;s reward is waiting for you
+              </Text>
             </View>
             <View style={[styles.checkInPromptButton, { backgroundColor: t.brand }]}>
-              <Text style={styles.checkInPromptButtonText}>Check In</Text>
+              <Text style={styles.checkInPromptButtonText}>
+                {availableCheckIn.isSpin ? 'Spin 🎰' : 'Check In'}
+              </Text>
             </View>
           </TouchableOpacity>
         )}
