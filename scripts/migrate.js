@@ -1,9 +1,10 @@
 const { Client } = require('pg');
 const dns = require('dns').promises;
 
-const DB_URL =
-  process.env.SUPABASE_DB_URL ||
-  'postgresql://postgres:ANT%40wasp2026@db.naogyrqswwwrrpnqovzj.supabase.co:5432/postgres';
+const DB_URL = process.env.SUPABASE_DB_URL;
+if (!DB_URL) {
+  throw new Error('Set SUPABASE_DB_URL before running this migration.');
+}
 
 const MIGRATION_SQL = `
 -- 1. Profiles Table
@@ -22,6 +23,29 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 );
 
 CREATE INDEX IF NOT EXISTS idx_profiles_username ON public.profiles(username);
+
+CREATE SCHEMA IF NOT EXISTS private;
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+
+CREATE TABLE IF NOT EXISTS private.contactless_credentials (
+  user_id uuid PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
+  code_hash text NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS private.contactless_attempts (
+  sender_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  recipient_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  failed_attempts integer NOT NULL DEFAULT 0,
+  locked_until timestamptz,
+  PRIMARY KEY (sender_id, recipient_id)
+);
+
+ALTER TABLE private.contactless_credentials ENABLE ROW LEVEL SECURITY;
+ALTER TABLE private.contactless_attempts ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON SCHEMA private FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON TABLE private.contactless_credentials FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON TABLE private.contactless_attempts FROM PUBLIC, anon, authenticated;
 
 -- 2. Transactions Table
 CREATE TABLE IF NOT EXISTS public.transactions (

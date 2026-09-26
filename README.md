@@ -65,6 +65,19 @@ Then scan the QR code with **Expo Go** (Android) or the Camera app (iOS), or pre
 - `a` — open in Android emulator
 - `w` — open in web browser
 
+Nearby Bluetooth uses a local native module and is not available in Expo Go. Use an installed NearbyPay development build on both phones; the receiver must keep NearbyPay open with Nearby Discovery enabled. The sender still needs internet to complete the transfer.
+
+### Supabase Database Updates
+
+The receive-code feature requires its private credential tables and RPC functions in Supabase. With `SUPABASE_DB_URL` set in `.env`, run these from the project root in order:
+
+```bash
+node --env-file=.env scripts/migrate.js
+node --env-file=.env scripts/deploy-functions.js
+```
+
+These commands modify the selected Supabase database. Confirm the target project before running them.
+
 ### Available Scripts
 
 | Command | Description |

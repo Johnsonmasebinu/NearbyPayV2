@@ -14,6 +14,7 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
   Image,
   Platform,
@@ -26,22 +27,37 @@ import {
 } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
+import { ContactlessCodeSheet } from '@/components/ui/contactless-code-sheet';
 import QRCodeView from '@/components/ui/qr-code';
 import { useToast } from '@/components/ui/toast';
 import { getAppTheme, GRADIENT_STOPS } from '@/constants/app-theme';
+import { useAuth } from '@/hooks/auth-provider';
 import { useAppTheme } from '@/hooks/theme-provider';
 import { useUserProfile } from '@/hooks/user-profile-provider';
+import { createReceiveQrPayload } from '@/lib/receive-qr';
 
 export function ReceiveScreen() {
   const router = useRouter();
   const { show } = useToast();
   const { isDark } = useAppTheme();
   const t = getAppTheme(isDark);
+  const { hasContactlessCode } = useAuth();
   const { profile } = useUserProfile();
+  const [contactlessSheetVisible, setContactlessSheetVisible] = useState(false);
 
   const cleanTag = (profile.tag || 'user').trim().replace(/^[@$]/, '');
-  const payUri = `nearbypay://pay?tag=${cleanTag}`;
+  const [receiveQr, setReceiveQr] = useState<{ tag: string; payload: string } | null>(null);
   const receiveLink = `https://nearbypay.me/@${cleanTag}`;
+
+  useEffect(() => {
+    let isActive = true;
+    void createReceiveQrPayload(cleanTag).then((payload) => {
+      if (isActive) setReceiveQr({ tag: cleanTag, payload });
+    }).catch(() => undefined);
+    return () => {
+      isActive = false;
+    };
+  }, [cleanTag]);
 
   const copyToClipboard = async (text: string, label: string) => {
     try {
@@ -139,14 +155,21 @@ export function ReceiveScreen() {
 
           {/* QR Code Container */}
           <View style={styles.qrSquare}>
-            <QRCodeView value={payUri} size={170} color="#0F172A" />
-            <View style={styles.qrCenterBadge}>
-              <Image
-                source={require('@/assets/images/logo/logo.png')}
-                style={styles.qrCenterLogo}
-                resizeMode="contain"
-              />
-            </View>
+            {hasContactlessCode && receiveQr?.tag === cleanTag ? (
+              <QRCodeView value={receiveQr.payload} size={170} color="#0F172A" />
+            ) : hasContactlessCode ? (
+              <Text style={styles.qrSetupText}>Preparing secure QR...</Text>
+            ) : (
+              <View style={styles.qrSetupPrompt}>
+                <Text style={styles.qrSetupText}>Enable your 8-digit contactless code to show your receive QR.</Text>
+                <TouchableOpacity
+                  style={styles.cardActionBtnPrimary}
+                  activeOpacity={0.85}
+                  onPress={() => setContactlessSheetVisible(true)}>
+                  <Text style={styles.cardActionTextPrimary}>Set up code</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
           {/* Card Action Buttons */}
@@ -246,7 +269,7 @@ export function ReceiveScreen() {
             <View style={styles.infoTextWrap}>
               <Text style={[styles.infoTitle, { color: t.textPrimary }]}>Receive Money</Text>
               <Text style={[styles.infoSub, { color: t.textSecondary }]}>
-                No fees. No stress. Just share and get paid.
+                The sender can pay while you are offline. They need internet to complete settlement.
               </Text>
             </View>
           </View>
@@ -269,6 +292,11 @@ export function ReceiveScreen() {
           </Text>
         </View>
       </ScrollView>
+      <ContactlessCodeSheet
+        visible={contactlessSheetVisible}
+        onClose={() => setContactlessSheetVisible(false)}
+        onSuccess={() => setContactlessSheetVisible(false)}
+      />
     </View>
   );
 }
@@ -379,25 +407,19 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 4,
   },
-  qrCenterBadge: {
-    position: 'absolute',
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#FFFFFF',
+  qrSetupPrompt: {
+    width: 170,
+    minHeight: 170,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    gap: 12,
   },
-  qrCenterLogo: {
-    width: 24,
-    height: 24,
+  qrSetupText: {
+    fontFamily: 'Montserrat_500Medium',
+    fontSize: 12,
+    color: '#334155',
+    textAlign: 'center',
+    lineHeight: 17,
   },
   cardActionsRow: {
     flexDirection: 'row',

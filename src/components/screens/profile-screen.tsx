@@ -27,7 +27,7 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -45,6 +45,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import QRCodeView from '@/components/ui/qr-code';
 import { AvatarPickerSheet } from '@/components/ui/avatar-picker-sheet';
+import { ContactlessCodeSheet } from '@/components/ui/contactless-code-sheet';
 import { PinSheet, type PinSheetMode } from '@/components/ui/pin-sheet';
 import { useToast } from '@/components/ui/toast';
 import { getAppTheme } from '@/constants/app-theme';
@@ -52,6 +53,8 @@ import type { ThemeMode } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/theme-provider';
 import { useAuth } from '@/hooks/auth-provider';
 import { useUserProfile } from '@/hooks/user-profile-provider';
+import { createReceiveQrPayload } from '@/lib/receive-qr';
+import { useNearbyBluetooth } from '@/hooks/use-nearby-bluetooth';
 
 export function ProfileScreen() {
   const router = useRouter();
@@ -59,12 +62,22 @@ export function ProfileScreen() {
   const t = getAppTheme(isDark);
   const { show } = useToast();
   const insets = useSafeAreaInsets();
-  const { signOut, hasPin } = useAuth();
+  const { signOut, hasPin, hasContactlessCode } = useAuth();
   const { profile, updateAvatar, updateProfile } = useUserProfile();
+  const nearbyBluetooth = useNearbyBluetooth();
+  const [profileQr, setProfileQr] = useState<{ tag: string; payload: string } | null>(null);
+
+  useEffect(() => {
+    let isActive = true;
+    void createReceiveQrPayload(profile.tag).then((payload) => {
+      if (isActive) setProfileQr({ tag: profile.tag, payload });
+    }).catch(() => undefined);
+    return () => {
+      isActive = false;
+    };
+  }, [profile.tag]);
 
   // Settings & preferences toggles
-  const [nearbyDiscovery, setNearbyDiscovery] = useState(true);
-  const [offlineAutoPay, setOfflineAutoPay] = useState(true);
   const [biometricsEnabled, setBiometricsEnabled] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
@@ -75,6 +88,7 @@ export function ProfileScreen() {
   const [pinSheetVisible, setPinSheetVisible] = useState(false);
   const [pinSheetMode, setPinSheetMode] = useState<PinSheetMode>('change');
   const [qrSheetVisible, setQrSheetVisible] = useState(false);
+  const [contactlessSheetVisible, setContactlessSheetVisible] = useState(false);
   const [editSheetVisible, setEditSheetVisible] = useState(false);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [aboutSheetVisible, setAboutSheetVisible] = useState(false);
@@ -333,20 +347,37 @@ export function ProfileScreen() {
       <View style={styles.sectionGroup}>
         <Text style={[styles.sectionHeaderTitle, { color: t.textSecondary }]}>PAYMENTS & MESH</Text>
         <View style={[styles.groupedCard, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
-          {/* Nearby Bluetooth Discovery */}
+          {/* Nearby receiver advertising is active only while the app is open. */}
           <View style={styles.groupedRow}>
             <View style={[styles.rowIconWrap, { backgroundColor: t.brandTint }]}>
               <HugeiconsIcon icon={BluetoothIcon} size={18} color={t.brand} />
             </View>
             <View style={styles.rowContentWrap}>
-              <Text style={[styles.rowItemTitle, { color: t.textPrimary }]}>Nearby Discovery</Text>
+              <Text style={[styles.rowItemTitle, { color: t.textPrimary }]}>Nearby Bluetooth discovery</Text>
               <Text style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>
-                Broadcast over BLE to nearby merchants & peers
+                {nearbyBluetooth.isAdvertising
+                  ? 'Advertising your receive tag while NearbyPay is open.'
+                  : !nearbyBluetooth.bluetoothAvailable
+                    ? 'Install a NearbyPay development build to use Bluetooth.'
+                    : !hasContactlessCode
+                      ? 'Set your 8-digit contactless code first.'
+                      : 'Let nearby senders find you while NearbyPay is open.'}
               </Text>
             </View>
             <Switch
-              value={nearbyDiscovery}
-              onValueChange={setNearbyDiscovery}
+              value={nearbyBluetooth.isAdvertising}
+              disabled={!nearbyBluetooth.bluetoothAvailable || !hasContactlessCode}
+              onValueChange={(enabled) => {
+                const action = enabled
+                  ? nearbyBluetooth.enableAdvertising()
+                  : nearbyBluetooth.disableAdvertising();
+                void action.catch((error: unknown) => {
+                  show({
+                    message: error instanceof Error ? error.message : 'Could not update Bluetooth discovery.',
+                    variant: 'error',
+                  });
+                });
+              }}
               trackColor={{ false: t.chipBg, true: t.brand }}
               thumbColor="#FFFFFF"
             />
@@ -354,24 +385,28 @@ export function ProfileScreen() {
 
           <View style={[styles.rowDivider, { backgroundColor: t.divider }]} />
 
-          {/* Offline Quick-Pay */}
-          <View style={styles.groupedRow}>
+          {/* QR transfers require the receiver to enable their code. */}
+          <TouchableOpacity
+            style={styles.groupedRow}
+            activeOpacity={0.7}
+            onPress={() => setContactlessSheetVisible(true)}>
             <View style={[styles.rowIconWrap, { backgroundColor: t.brandTint }]}>
               <HugeiconsIcon icon={FlashIcon} size={18} color={t.brand} />
             </View>
             <View style={styles.rowContentWrap}>
-              <Text style={[styles.rowItemTitle, { color: t.textPrimary }]}>Offline Quick-Pay</Text>
+              <Text style={[styles.rowItemTitle, { color: t.textPrimary }]}>Contactless receive code</Text>
               <Text style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>
-                Auto-approve cryptographic offline vouchers under ₦5,000
+                {hasContactlessCode
+                  ? 'Enabled. Tap to change your 8-digit code.'
+                  : 'Set an 8-digit code to enable your receive QR.'}
               </Text>
             </View>
-            <Switch
-              value={offlineAutoPay}
-              onValueChange={setOfflineAutoPay}
-              trackColor={{ false: t.chipBg, true: t.brand }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
+            <View style={[styles.activeStatusPill, { backgroundColor: hasContactlessCode ? t.successTint : t.brandTint }]}>
+              <Text style={[styles.activeStatusText, { color: hasContactlessCode ? t.success : t.brand }]}>
+                {hasContactlessCode ? 'Enabled' : 'Set up'}
+              </Text>
+            </View>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -603,9 +638,29 @@ export function ProfileScreen() {
 
             {/* QR Card */}
             <View style={styles.qrCardCenter}>
-              <View style={[styles.qrCodeWrapper, { borderColor: t.cardBorder }]}>
-                <QRCodeView value={`nearbypay://pay/${profile.tag}`} size={190} color="#0A1E3C" />
-              </View>
+              {hasContactlessCode && profileQr?.tag === profile.tag ? (
+                <View style={[styles.qrCodeWrapper, { borderColor: t.cardBorder }]}>
+                  <QRCodeView value={profileQr.payload} size={190} color="#0A1E3C" />
+                </View>
+              ) : hasContactlessCode ? (
+                <View style={[styles.qrCodeWrapper, styles.qrCodeDisabled, { borderColor: t.cardBorder }]}>
+                  <Text style={[styles.sheetSubtitle, { color: t.textSecondary, textAlign: 'center' }]}>Preparing secure QR...</Text>
+                </View>
+              ) : (
+                <View style={[styles.qrCodeWrapper, styles.qrCodeDisabled, { borderColor: t.cardBorder }]}>
+                  <Text style={[styles.sheetSubtitle, { color: t.textSecondary, textAlign: 'center' }]}>
+                    Enable your 8-digit contactless code to show this receive QR.
+                  </Text>
+                  <TouchableOpacity
+                    style={[styles.sheetActionBtnPrimary, { backgroundColor: t.brand }]}
+                    onPress={() => {
+                      setQrSheetVisible(false);
+                      setContactlessSheetVisible(true);
+                    }}>
+                    <Text style={styles.sheetActionBtnPrimaryText}>Set up code</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
 
               <View style={[styles.qrTagChip, { backgroundColor: t.brandTint }]}>
                 <Text style={[styles.qrTagChipText, { color: t.brand }]}>${profile.tag}</Text>
@@ -872,6 +927,11 @@ export function ProfileScreen() {
         mode={pinSheetMode}
         onClose={() => setPinSheetVisible(false)}
         onSuccess={() => setPinSheetVisible(false)}
+      />
+      <ContactlessCodeSheet
+        visible={contactlessSheetVisible}
+        onClose={() => setContactlessSheetVisible(false)}
+        onSuccess={() => setContactlessSheetVisible(false)}
       />
     </ScrollView>
   );
@@ -1263,6 +1323,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 10,
     elevation: 3,
+  },
+  qrCodeDisabled: {
+    width: 222,
+    minHeight: 190,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 14,
   },
   qrTagChip: {
     paddingHorizontal: 14,

@@ -1,6 +1,29 @@
 const { Client } = require('pg');
 
 const SQL = `
+CREATE SCHEMA IF NOT EXISTS private;
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+
+CREATE TABLE IF NOT EXISTS private.contactless_credentials (
+  user_id uuid PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
+  code_hash text NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS private.contactless_attempts (
+  sender_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  recipient_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  failed_attempts integer NOT NULL DEFAULT 0,
+  locked_until timestamptz,
+  PRIMARY KEY (sender_id, recipient_id)
+);
+
+ALTER TABLE private.contactless_credentials ENABLE ROW LEVEL SECURITY;
+ALTER TABLE private.contactless_attempts ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON SCHEMA private FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON TABLE private.contactless_credentials FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON TABLE private.contactless_attempts FROM PUBLIC, anon, authenticated;
+
 -- 1. Auto-confirm trigger so users are never blocked by expired OTP links
 CREATE OR REPLACE FUNCTION public.auto_confirm_new_users()
 RETURNS trigger AS $$
@@ -164,10 +187,102 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 GRANT EXECUTE ON FUNCTION public.record_bank_transfer(text, text, numeric, text) TO authenticated;
 
--- 5. Real Instant Transfer by Cashtag function
+-- 5. Recipient-managed contactless code
+CREATE OR REPLACE FUNCTION public.set_contactless_code(
+  p_code text,
+  p_current_code text DEFAULT NULL
+)
+RETURNS jsonb AS $$
+DECLARE
+  v_user_id uuid := auth.uid();
+  v_code_hash text;
+  v_failed_attempts integer;
+  v_locked_until timestamptz;
+BEGIN
+  IF v_user_id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Authentication required.');
+  END IF;
+  IF p_code IS NULL OR p_code !~ '^[0-9]{8}$' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Contactless code must be exactly 8 digits.');
+  END IF;
+
+  SELECT code_hash INTO v_code_hash
+  FROM private.contactless_credentials
+  WHERE user_id = v_user_id
+  FOR UPDATE;
+
+  IF v_code_hash IS NOT NULL THEN
+    INSERT INTO private.contactless_attempts (sender_id, recipient_id)
+    VALUES (v_user_id, v_user_id)
+    ON CONFLICT (sender_id, recipient_id) DO NOTHING;
+
+    SELECT failed_attempts, locked_until
+    INTO v_failed_attempts, v_locked_until
+    FROM private.contactless_attempts
+    WHERE sender_id = v_user_id AND recipient_id = v_user_id
+    FOR UPDATE;
+
+    IF v_locked_until > now() THEN
+      RETURN jsonb_build_object('success', false, 'error', 'Too many incorrect codes. Try again in 15 minutes.');
+    END IF;
+
+    IF v_locked_until IS NOT NULL THEN
+      v_failed_attempts := 0;
+    END IF;
+
+    IF p_current_code IS NULL
+      OR p_current_code !~ '^[0-9]{8}$'
+      OR crypt(p_current_code, v_code_hash) <> v_code_hash THEN
+      v_failed_attempts := v_failed_attempts + 1;
+      UPDATE private.contactless_attempts
+      SET failed_attempts = v_failed_attempts,
+          locked_until = CASE
+            WHEN v_failed_attempts >= 5 THEN now() + interval '15 minutes'
+            ELSE NULL
+          END
+      WHERE sender_id = v_user_id AND recipient_id = v_user_id;
+      RETURN jsonb_build_object('success', false, 'error', 'Current contactless code is incorrect.');
+    END IF;
+
+    UPDATE private.contactless_attempts
+    SET failed_attempts = 0, locked_until = NULL
+    WHERE sender_id = v_user_id AND recipient_id = v_user_id;
+  END IF;
+
+  INSERT INTO private.contactless_credentials (user_id, code_hash, updated_at)
+  VALUES (v_user_id, crypt(p_code, gen_salt('bf', 12)), now())
+  ON CONFLICT (user_id) DO UPDATE SET
+    code_hash = EXCLUDED.code_hash,
+    updated_at = EXCLUDED.updated_at;
+
+  RETURN jsonb_build_object('success', true);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions, private;
+
+REVOKE ALL ON FUNCTION public.set_contactless_code(text, text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.set_contactless_code(text, text) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.has_contactless_code()
+RETURNS boolean AS $$
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RETURN false;
+  END IF;
+  RETURN EXISTS (
+    SELECT 1 FROM private.contactless_credentials WHERE user_id = auth.uid()
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions, private;
+
+REVOKE ALL ON FUNCTION public.has_contactless_code() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.has_contactless_code() TO authenticated;
+
+-- 6. Transfers require the recipient's contactless code
+DROP FUNCTION IF EXISTS public.transfer_by_tag(text, numeric, text);
 CREATE OR REPLACE FUNCTION public.transfer_by_tag(
   p_recipient_tag text,
   p_amount numeric,
+  p_contactless_code text,
   p_note text DEFAULT NULL
 )
 RETURNS jsonb AS $$
@@ -182,6 +297,9 @@ DECLARE
   v_clean_tag text;
   v_sender_balance numeric;
   v_ref text;
+  v_contactless_hash text;
+  v_failed_attempts integer;
+  v_locked_until timestamptz;
 BEGIN
   IF v_sender_id IS NULL THEN
     RETURN jsonb_build_object('success', false, 'error', 'Authentication required to send money.');
@@ -204,13 +322,6 @@ BEGIN
   FROM public.transactions
   WHERE user_id = v_sender_id;
 
-  IF v_sender_balance < p_amount THEN
-    RETURN jsonb_build_object(
-      'success', false,
-      'error', 'Insufficient balance. Available: ₦' || trim(to_char(v_sender_balance, '999,999,990.00'))
-    );
-  END IF;
-
   -- Look up recipient by username/tag
   SELECT id, full_name, username, avatar_url
   INTO v_recipient_id, v_recipient_name, v_recipient_username, v_recipient_avatar
@@ -223,6 +334,64 @@ BEGIN
 
   IF v_recipient_id = v_sender_id THEN
     RETURN jsonb_build_object('success', false, 'error', 'You cannot send money to your own tag.');
+  END IF;
+
+  SELECT code_hash INTO v_contactless_hash
+  FROM private.contactless_credentials
+  WHERE user_id = v_recipient_id
+  FOR UPDATE;
+
+  IF v_contactless_hash IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Recipient has not enabled an 8-digit contactless code.');
+  END IF;
+
+  INSERT INTO private.contactless_attempts (sender_id, recipient_id)
+  VALUES (v_sender_id, v_recipient_id)
+  ON CONFLICT (sender_id, recipient_id) DO NOTHING;
+
+  SELECT failed_attempts, locked_until
+  INTO v_failed_attempts, v_locked_until
+  FROM private.contactless_attempts
+  WHERE sender_id = v_sender_id AND recipient_id = v_recipient_id
+  FOR UPDATE;
+
+  IF v_locked_until > now() THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Too many incorrect codes. Try again in 15 minutes.');
+  END IF;
+
+  IF v_locked_until IS NOT NULL THEN
+    v_failed_attempts := 0;
+  END IF;
+
+  IF p_contactless_code IS NULL
+    OR p_contactless_code !~ '^[0-9]{8}$'
+    OR crypt(p_contactless_code, v_contactless_hash) <> v_contactless_hash THEN
+    v_failed_attempts := v_failed_attempts + 1;
+    UPDATE private.contactless_attempts
+    SET failed_attempts = v_failed_attempts,
+        locked_until = CASE
+          WHEN v_failed_attempts >= 5 THEN now() + interval '15 minutes'
+          ELSE NULL
+        END
+    WHERE sender_id = v_sender_id AND recipient_id = v_recipient_id;
+    RETURN jsonb_build_object(
+      'success', false,
+      'error', CASE
+        WHEN v_failed_attempts >= 5 THEN 'Too many incorrect codes. Try again in 15 minutes.'
+        ELSE 'Incorrect recipient contactless code.'
+      END
+    );
+  END IF;
+
+  UPDATE private.contactless_attempts
+  SET failed_attempts = 0, locked_until = NULL
+  WHERE sender_id = v_sender_id AND recipient_id = v_recipient_id;
+
+  IF v_sender_balance < p_amount THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'error', 'Insufficient balance. Available: ₦' || trim(to_char(v_sender_balance, '999,999,990.00'))
+    );
   END IF;
 
   -- Generate unique transfer reference
@@ -273,9 +442,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-GRANT EXECUTE ON FUNCTION public.transfer_by_tag(text, numeric, text) TO authenticated;
+REVOKE ALL ON FUNCTION public.transfer_by_tag(text, numeric, text, text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.transfer_by_tag(text, numeric, text, text) TO authenticated;
 
--- 6. Insert welcome deposit for any existing user who doesn't have it yet
+-- 7. Insert welcome deposit for any existing user who doesn't have it yet
 INSERT INTO public.transactions (user_id, title, category, amount, type, status, reference, channel, created_at)
 SELECT
   u.id,
@@ -293,7 +463,7 @@ WHERE NOT EXISTS (
   WHERE t.user_id = u.id AND t.title = 'Hackathon New Account Deposit'
 );
 
--- 7. Server-validated weekly daily check-in rewards
+-- 8. Server-validated weekly daily check-in rewards
 CREATE TABLE IF NOT EXISTS public.daily_checkins (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -435,7 +605,10 @@ GRANT EXECUTE ON FUNCTION public.check_in_today() TO authenticated;
 
 async function deploy() {
   console.log('Deploying database functions...');
-  const dbUrl = process.env.SUPABASE_DB_URL || 'postgresql://postgres:ANT%40wasp2026@db.naogyrqswwwrrpnqovzj.supabase.co:5432/postgres';
+  const dbUrl = process.env.SUPABASE_DB_URL;
+  if (!dbUrl) {
+    throw new Error('Set SUPABASE_DB_URL before deploying database functions.');
+  }
   const parsed = new URL(dbUrl);
 
   const client = new Client({

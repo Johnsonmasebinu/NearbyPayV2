@@ -1,6 +1,7 @@
 import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
+  BluetoothIcon,
   Building01Icon,
   Cancel01Icon,
   CheckmarkCircle02Icon,
@@ -13,6 +14,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as Clipboard from 'expo-clipboard';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Image } from 'expo-image';
@@ -39,6 +41,8 @@ import { getAppTheme, GRADIENT_STOPS } from '@/constants/app-theme';
 import { useAuth } from '@/hooks/auth-provider';
 import { useAppTheme } from '@/hooks/theme-provider';
 import { useTransactions } from '@/hooks/use-transactions';
+import { useNearbyBluetooth } from '@/hooks/use-nearby-bluetooth';
+import { parseReceiveQrPayload } from '@/lib/receive-qr';
 import { supabase } from '@/lib/supabase';
 
 type RecipientProfile = {
@@ -73,6 +77,8 @@ export function SendScreen() {
   const t = getAppTheme(isDark);
   const { user, hasPin, verifyPin } = useAuth();
   const { balance, refresh } = useTransactions();
+  const nearbyBluetooth = useNearbyBluetooth();
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
 
   const [tab, setTab] = useState<'nearby' | 'bank'>('nearby');
   const [recipientQuery, setRecipientQuery] = useState('');
@@ -89,13 +95,41 @@ export function SendScreen() {
   // Modals
   const [pinModalVisible, setPinModalVisible] = useState(false);
   const [qrModalVisible, setQrModalVisible] = useState(false);
+  const [bleModalVisible, setBleModalVisible] = useState(false);
+  const [contactlessCodeModalVisible, setContactlessCodeModalVisible] = useState(false);
+  const [contactlessCode, setContactlessCode] = useState('');
+  const [contactlessCodeError, setContactlessCodeError] = useState('');
   const [qrInput, setQrInput] = useState('');
+  const hasScannedQr = useRef(false);
   const [receipt, setReceipt] = useState<TransferReceipt | null>(null);
   const receiptArtworkRef = useRef<View>(null);
 
   const numAmount = parseFloat(amount.replace(/[^0-9.]/g, '')) || 0;
   const hasAmount = numAmount > 0;
   const isOverBalance = numAmount > balance;
+
+  const openQrScanner = () => {
+    hasScannedQr.current = false;
+    setQrModalVisible(true);
+  };
+
+  const openBluetoothScanner = async () => {
+    setBleModalVisible(true);
+    try {
+      await nearbyBluetooth.scanForReceivers();
+    } catch (error) {
+      setBleModalVisible(false);
+      show({
+        message: error instanceof Error ? error.message : 'Could not scan for nearby receivers.',
+        variant: 'error',
+      });
+    }
+  };
+
+  const closeBluetoothScanner = () => {
+    setBleModalVisible(false);
+    void nearbyBluetooth.stopReceiverScan().catch(() => undefined);
+  };
 
   // Load nearby/existing users on mount
   useEffect(() => {
@@ -181,26 +215,17 @@ export function SendScreen() {
       return;
     }
 
-    // Extract Cashtag from various formats:
-    // 1. nearbypay://pay?tag=johnsonmas81
-    // 2. https://nearbypay.me/@johnsonmas81
-    // 3. @johnsonmas81 or johnsonmas81
-    let tag = '';
-    const uriMatch = clean.match(/tag=([a-zA-Z0-9_]+)/i);
-    const atMatch = clean.match(/@([a-zA-Z0-9_]+)/i);
-    const pathMatch = clean.match(/(?:pay|receive)\/@?([a-zA-Z0-9_]+)/i);
-
-    if (uriMatch) {
-      tag = uriMatch[1];
-    } else if (atMatch) {
-      tag = atMatch[1];
-    } else if (pathMatch) {
-      tag = pathMatch[1];
-    } else {
-      tag = clean.replace(/^[@$]/, '');
+    let tag: string;
+    try {
+      tag = await parseReceiveQrPayload(clean);
+    } catch (error) {
+      hasScannedQr.current = false;
+      show({
+        message: error instanceof Error ? error.message : 'This payment QR is invalid.',
+        variant: 'error',
+      });
+      return;
     }
-
-    tag = tag.toLowerCase().trim();
 
     try {
       const { data, error } = await supabase
@@ -209,12 +234,19 @@ export function SendScreen() {
         .ilike('username', tag)
         .maybeSingle();
 
-      if (error || !data) {
+      if (error) {
+        hasScannedQr.current = false;
+        show({ message: 'Connect to the internet to resolve this payment QR.', variant: 'error' });
+        return;
+      }
+      if (!data) {
+        hasScannedQr.current = false;
         show({ message: `No NearbyPay user found with Cashtag @${tag}`, variant: 'error' });
         return;
       }
 
       if (data.id === user?.id) {
+        hasScannedQr.current = false;
         show({ message: 'That is your own Cashtag QR code!', variant: 'info' });
         return;
       }
@@ -227,12 +259,16 @@ export function SendScreen() {
       };
 
       setSelectedNearbyUser(foundUser);
+      setContactlessCode('');
+      setContactlessCodeError('');
       setTab('nearby');
       setQrModalVisible(false);
+      setContactlessCodeModalVisible(true);
       setQrInput('');
       setRecipientQuery('');
       show({ message: `Resolved @${foundUser.username} from QR!`, variant: 'success' });
     } catch {
+      hasScannedQr.current = false;
       show({ message: 'Failed to look up user from QR', variant: 'error' });
     }
   };
@@ -261,6 +297,10 @@ export function SendScreen() {
         show({ message: 'Please select a recipient by Cashtag', variant: 'error' });
         return;
       }
+      if (!/^\d{8}$/.test(contactlessCode)) {
+        setContactlessCodeModalVisible(true);
+        return;
+      }
       setPinModalVisible(true);
     } else {
       if (!selectedBank) {
@@ -281,13 +321,24 @@ export function SendScreen() {
       const { data, error } = await supabase.rpc('transfer_by_tag', {
         p_recipient_tag: selectedNearbyUser.username,
         p_amount: numAmount,
+        p_contactless_code: contactlessCode,
         p_note: note.trim() || 'NearbyPay Cashtag',
       });
 
       if (error) throw new Error(error.message);
-      if (!data.success) throw new Error(data.error || 'Transfer failed');
+      if (!data.success) {
+        const transferError = data.error || 'Transfer failed';
+        if (/contactless code/i.test(transferError)) {
+          setContactlessCode('');
+          setContactlessCodeError(transferError);
+          setContactlessCodeModalVisible(true);
+          return;
+        }
+        throw new Error(transferError);
+      }
 
       await refresh();
+      setContactlessCode('');
 
       setReceipt({
         reference: data.reference,
@@ -336,6 +387,7 @@ export function SendScreen() {
 
   const handleDoneReceipt = () => {
     setReceipt(null);
+    setContactlessCode('');
     setAmount('');
     setNote('');
     setRecipientQuery('');
@@ -409,7 +461,7 @@ export function SendScreen() {
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel="Scan QR code"
-          onPress={() => setQrModalVisible(true)}>
+          onPress={openQrScanner}>
           <HugeiconsIcon icon={QrCodeIcon} size={18} color={t.brand} />
         </TouchableOpacity>
       </View>
@@ -450,13 +502,22 @@ export function SendScreen() {
               <Text style={[styles.sectionLabel, { color: t.textPrimary, marginTop: 0 }]}>
                 Recipient Cashtag
               </Text>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                style={styles.qrScanPill}
-                onPress={() => setQrModalVisible(true)}>
-                <HugeiconsIcon icon={QrCodeIcon} size={14} color={t.brand} />
-                <Text style={[styles.qrScanPillText, { color: t.brand }]}>Read QR</Text>
-              </TouchableOpacity>
+              <View style={styles.scanActions}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  style={styles.qrScanPill}
+                  onPress={openQrScanner}>
+                  <HugeiconsIcon icon={QrCodeIcon} size={14} color={t.brand} />
+                  <Text style={[styles.qrScanPillText, { color: t.brand }]}>Read QR</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  style={styles.qrScanPill}
+                  onPress={() => void openBluetoothScanner()}>
+                  <HugeiconsIcon icon={BluetoothIcon} size={14} color={t.brand} />
+                  <Text style={[styles.qrScanPillText, { color: t.brand }]}>Bluetooth</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Selected Recipient Card */}
@@ -518,7 +579,7 @@ export function SendScreen() {
                 <TouchableOpacity
                   activeOpacity={0.7}
                   hitSlop={8}
-                  onPress={() => setQrModalVisible(true)}>
+                  onPress={openQrScanner}>
                   <HugeiconsIcon icon={QrCodeIcon} size={18} color={t.brand} />
                 </TouchableOpacity>
               )}
@@ -538,6 +599,7 @@ export function SendScreen() {
                     activeOpacity={0.7}
                     onPress={() => {
                       setSelectedNearbyUser(item);
+                      setContactlessCode('');
                       setRecipientQuery('');
                       setSearchResults([]);
                     }}>
@@ -562,7 +624,10 @@ export function SendScreen() {
                     key={item.id}
                     style={styles.recipientItem}
                     activeOpacity={0.8}
-                    onPress={() => setSelectedNearbyUser(item)}>
+                    onPress={() => {
+                      setSelectedNearbyUser(item);
+                      setContactlessCode('');
+                    }}>
                     <View
                       style={[
                         styles.avatarCircle,
@@ -585,7 +650,7 @@ export function SendScreen() {
               <TouchableOpacity
                 style={styles.recipientItem}
                 activeOpacity={0.8}
-                onPress={() => setQrModalVisible(true)}>
+                onPress={openQrScanner}>
                 <View style={[styles.avatarCircle, { backgroundColor: t.brandTint }]}>
                   <HugeiconsIcon icon={QrCodeIcon} size={22} color={t.brand} />
                 </View>
@@ -830,10 +895,10 @@ export function SendScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.qrSheetTitle, { color: t.textPrimary }]}>
-                  Read Cashtag QR
+                  Scan payment QR
                 </Text>
                 <Text style={[styles.qrSheetSubtitle, { color: t.textSecondary }]}>
-                  Paste QR code link or tap a nearby user
+                  The receiver can be offline; you need internet to pay
                 </Text>
               </View>
               <TouchableOpacity
@@ -841,6 +906,35 @@ export function SendScreen() {
                 onPress={() => setQrModalVisible(false)}>
                 <HugeiconsIcon icon={Cancel01Icon} size={16} color={t.textPrimary} />
               </TouchableOpacity>
+            </View>
+
+            <View style={[styles.cameraFrame, { backgroundColor: t.chipBg }]}>
+              {cameraPermission?.granted ? (
+                <CameraView
+                  style={styles.cameraPreview}
+                  facing="back"
+                  barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+                  onBarcodeScanned={({ data }) => {
+                    if (hasScannedQr.current) return;
+                    hasScannedQr.current = true;
+                    void handleApplyQr(data);
+                  }}
+                />
+              ) : (
+                <View style={styles.cameraPermissionPrompt}>
+                  <Text style={[styles.cameraPermissionText, { color: t.textSecondary }]}>
+                    {cameraPermission ? 'Camera access is needed to scan a payment QR.' : 'Starting camera...'}
+                  </Text>
+                  {cameraPermission && (
+                    <TouchableOpacity
+                      style={[styles.qrApplyBtn, { backgroundColor: t.brand }]}
+                      activeOpacity={0.85}
+                      onPress={() => void requestCameraPermission()}>
+                      <Text style={styles.qrApplyBtnText}>Enable camera</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
             </View>
 
             <View
@@ -879,6 +973,7 @@ export function SendScreen() {
                   activeOpacity={0.8}
                   onPress={() => {
                     setSelectedNearbyUser(item);
+                    setContactlessCode('');
                     setTab('nearby');
                     setQrModalVisible(false);
                     show({ message: `Selected @${item.username}`, variant: 'success' });
@@ -898,6 +993,144 @@ export function SendScreen() {
                 </TouchableOpacity>
               ))}
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={bleModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={closeBluetoothScanner}>
+        <View style={styles.modalBackdrop}>
+          <TouchableOpacity
+            style={styles.backdropTouch}
+            activeOpacity={1}
+            onPress={closeBluetoothScanner}
+          />
+          <View style={[styles.qrSheet, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
+            <View style={[styles.sheetHandle, { backgroundColor: t.divider }]} />
+            <View style={styles.qrSheetHeader}>
+              <View style={[styles.qrHeaderIconWrap, { backgroundColor: t.brandTint }]}>
+                <HugeiconsIcon icon={BluetoothIcon} size={22} color={t.brand} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.qrSheetTitle, { color: t.textPrimary }]}>Nearby receivers</Text>
+                <Text style={[styles.qrSheetSubtitle, { color: t.textSecondary }]}>
+                  Keep the receiver app open with Nearby Discovery on.
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.closeIconBtn, { backgroundColor: t.chipBg }]}
+                onPress={closeBluetoothScanner}>
+                <HugeiconsIcon icon={Cancel01Icon} size={16} color={t.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            {nearbyBluetooth.devices.length > 0 ? (
+              <View style={styles.discoveredList}>
+                {nearbyBluetooth.devices.map((device) => (
+                  <TouchableOpacity
+                    key={device.id}
+                    style={[styles.discoveredItem, { backgroundColor: t.chipBg, borderColor: t.cardBorder }]}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      closeBluetoothScanner();
+                      void handleApplyQr(device.tag);
+                    }}>
+                    <View style={[styles.discoveredAvatar, styles.bluetoothAvatar, { backgroundColor: t.brandTint }]}>
+                      <HugeiconsIcon icon={BluetoothIcon} size={17} color={t.brand} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.discoveredName, { color: t.textPrimary }]}>{device.name}</Text>
+                      <Text style={[styles.discoveredTag, { color: t.brand }]}>@{device.tag}</Text>
+                    </View>
+                    <Text style={[styles.bluetoothSignal, { color: t.textSecondary }]}>{device.rssi} dBm</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : nearbyBluetooth.isScanning ? (
+              <View style={styles.bluetoothEmptyState}>
+                <ActivityIndicator color={t.brand} />
+                <Text style={[styles.cameraPermissionText, { color: t.textSecondary }]}>
+                  Scanning for NearbyPay receivers...
+                </Text>
+              </View>
+            ) : (
+              <Text style={[styles.bluetoothEmptyText, { color: t.textSecondary }]}>
+                {nearbyBluetooth.status?.message || 'No receivers found nearby.'}
+              </Text>
+            )}
+
+            <TouchableOpacity
+              style={[styles.contactlessContinueButton, { backgroundColor: t.chipBg }]}
+              activeOpacity={0.85}
+              onPress={closeBluetoothScanner}>
+              <Text style={[styles.qrApplyBtnText, { color: t.textPrimary }]}>Close scan</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={contactlessCodeModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setContactlessCodeModalVisible(false)}>
+        <View style={styles.modalBackdrop}>
+          <TouchableOpacity
+            style={styles.backdropTouch}
+            activeOpacity={1}
+            onPress={() => setContactlessCodeModalVisible(false)}
+          />
+          <View style={[styles.qrSheet, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
+            <View style={[styles.sheetHandle, { backgroundColor: t.divider }]} />
+            <View style={styles.qrSheetHeader}>
+              <View style={[styles.qrHeaderIconWrap, { backgroundColor: t.brandTint }]}>
+                <HugeiconsIcon icon={ShieldCheckIcon} size={22} color={t.brand} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.qrSheetTitle, { color: t.textPrimary }]}>Recipient contactless code</Text>
+                <Text style={[styles.qrSheetSubtitle, { color: t.textSecondary }]}>
+                  Ask @{selectedNearbyUser?.username || 'recipient'} for their 8-digit code. It is not in the QR.
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.closeIconBtn, { backgroundColor: t.chipBg }]}
+                onPress={() => setContactlessCodeModalVisible(false)}>
+                <HugeiconsIcon icon={Cancel01Icon} size={16} color={t.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            <TextInput
+              style={[styles.contactlessCodeInput, { backgroundColor: t.inputBg, borderColor: t.inputBorder, color: t.textPrimary }]}
+              placeholder="8-digit code"
+              placeholderTextColor={t.muted}
+              value={contactlessCode}
+              onChangeText={(value) => {
+                setContactlessCode(value.replace(/\D/g, '').slice(0, 8));
+                setContactlessCodeError('');
+              }}
+              keyboardType="number-pad"
+              secureTextEntry
+              maxLength={8}
+              accessibilityLabel="Recipient's 8-digit contactless code"
+            />
+            {contactlessCodeError ? <Text style={styles.contactlessCodeError}>{contactlessCodeError}</Text> : null}
+
+            <TouchableOpacity
+              style={[styles.contactlessContinueButton, { backgroundColor: t.brand }]}
+              activeOpacity={0.85}
+              onPress={() => {
+                if (!/^\d{8}$/.test(contactlessCode)) {
+                  setContactlessCodeError('Enter the recipient\'s 8-digit code.');
+                  return;
+                }
+                setContactlessCodeError('');
+                setContactlessCodeModalVisible(false);
+              }}>
+              <Text style={styles.qrApplyBtnText}>Continue</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -1072,6 +1305,11 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
     marginTop: 16,
     marginBottom: 10,
+  },
+  scanActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   qrScanPill: {
     flexDirection: 'row',
@@ -1421,6 +1659,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingHorizontal: 20,
     paddingBottom: 36,
+    maxHeight: '92%',
   },
   sheetHandle: {
     width: 40,
@@ -1457,6 +1696,48 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  cameraFrame: {
+    height: 210,
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  cameraPreview: {
+    flex: 1,
+  },
+  cameraPermissionPrompt: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+    gap: 12,
+  },
+  cameraPermissionText: {
+    fontFamily: 'Montserrat_500Medium',
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  contactlessCodeInput: {
+    height: 52,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    textAlign: 'center',
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 20,
+    letterSpacing: 5,
+  },
+  contactlessCodeError: {
+    color: '#DC2626',
+    fontFamily: 'Montserrat_500Medium',
+    fontSize: 12,
+  },
+  contactlessContinueButton: {
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
   },
   qrInputBox: {
     flexDirection: 'row',
@@ -1505,6 +1786,26 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     backgroundColor: '#CBD5E1',
+  },
+  bluetoothAvatar: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bluetoothSignal: {
+    fontFamily: 'Montserrat_500Medium',
+    fontSize: 10,
+  },
+  bluetoothEmptyState: {
+    minHeight: 112,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  bluetoothEmptyText: {
+    paddingVertical: 28,
+    fontFamily: 'Montserrat_500Medium',
+    fontSize: 13,
+    textAlign: 'center',
   },
   discoveredName: {
     fontFamily: 'Montserrat_600SemiBold',

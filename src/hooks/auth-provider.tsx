@@ -1,4 +1,5 @@
 import { type Session, type User } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 
 import { hashPinWithSalt } from '@/lib/crypto';
@@ -23,6 +24,7 @@ export type UserProfile = {
   bankName: string;
   createdAt: string;
   hasPin: boolean;
+  hasContactlessCode: boolean;
 };
 
 type SignUpParams = {
@@ -46,12 +48,14 @@ type AuthContextType = {
   profile: UserProfile | null;
   isLoading: boolean;
   hasPin: boolean;
+  hasContactlessCode: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (params: SignUpParams) => Promise<SignUpResult>;
   signOut: () => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
   resendVerificationEmail: (email: string) => Promise<void>;
   setupPin: (pin: string) => Promise<void>;
+  setContactlessCode: (code: string, currentCode?: string) => Promise<void>;
   verifyPin: (pin: string) => Promise<boolean>;
   changePin: (oldPin: string, newPin: string) => Promise<void>;
   resetPin: (password: string, newPin: string) => Promise<void>;
@@ -65,6 +69,24 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const DEFAULT_AVATAR = 'https://cdn.jsdelivr.net/gh/alohe/avatars/png/memo_1.png';
+const OFFLINE_PROFILE_CACHE_PREFIX = '@nearbypay_receive_profile_v1:';
+
+async function cacheOfflineProfile(profile: UserProfile) {
+  try {
+    await AsyncStorage.setItem(
+      `${OFFLINE_PROFILE_CACHE_PREFIX}${profile.id}`,
+      JSON.stringify({
+        id: profile.id,
+        name: profile.name,
+        tag: profile.tag,
+        avatar: profile.avatar,
+        hasContactlessCode: profile.hasContactlessCode,
+      }),
+    );
+  } catch {
+    // Offline receive still works for the current app session if storage fails.
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -74,6 +96,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Fetch public.profiles row for user
   const fetchProfile = async (currentUser: User): Promise<UserProfile | null> => {
+    let cachedProfile: UserProfile | null = null;
+    try {
+      const cachedValue = await AsyncStorage.getItem(
+        `${OFFLINE_PROFILE_CACHE_PREFIX}${currentUser.id}`,
+      );
+      if (cachedValue) {
+        const cached = JSON.parse(cachedValue);
+        if (cached?.id === currentUser.id && typeof cached.tag === 'string') {
+          cachedProfile = {
+            id: cached.id,
+            name: cached.name || 'NearbyPay User',
+            tag: cached.tag,
+            email: currentUser.email || '',
+            phone: '',
+            bio: '',
+            avatar: cached.avatar || DEFAULT_AVATAR,
+            accountNumber: '',
+            bankName: '',
+            createdAt: currentUser.created_at,
+            hasPin: false,
+            hasContactlessCode: cached.hasContactlessCode === true,
+          };
+          setProfile(cachedProfile);
+        }
+      }
+    } catch {
+      // Continue with a network fetch when the local profile cache is unavailable.
+    }
+
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -83,10 +134,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error('Error fetching profile from Supabase:', error.message);
-        return null;
+        return cachedProfile;
       }
 
       if (data) {
+        const { data: hasContactlessCode, error: contactlessError } = await supabase.rpc('has_contactless_code');
         const userProf: UserProfile = {
           id: data.id,
           name: data.full_name || 'NearbyPay User',
@@ -99,14 +151,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           bankName: data.bank_name || 'Providus Bank • Virtual Account',
           createdAt: data.created_at || currentUser.created_at,
           hasPin: Boolean(data.pin_hash),
+          hasContactlessCode: contactlessError
+            ? Boolean(cachedProfile?.hasContactlessCode)
+            : hasContactlessCode === true,
         };
         setProfile(userProf);
+        await cacheOfflineProfile(userProf);
         return userProf;
       }
     } catch (e) {
       console.error('Failed to load profile:', e);
     }
-    return null;
+    return cachedProfile;
   };
 
   useEffect(() => {
@@ -314,7 +370,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) throw new Error(error.message);
 
-    setProfile((prev) => (prev ? { ...prev, hasPin: true } : null));
+    setProfile((prev) => {
+      if (!prev) return null;
+      const next = { ...prev, hasPin: true };
+      void cacheOfflineProfile(next);
+      return next;
+    });
+  };
+
+  const setContactlessCode = async (code: string, currentCode?: string) => {
+    if (!user) throw new Error('Not logged in');
+    if (!/^\d{8}$/.test(code)) throw new Error('Contactless code must be exactly 8 digits.');
+
+    const { data, error } = await supabase.rpc('set_contactless_code', {
+      p_code: code,
+      p_current_code: currentCode || null,
+    });
+    if (error) throw new Error(error.message);
+    if (!data?.success) throw new Error(data?.error || 'Could not save the contactless code.');
+
+    setProfile((prev) => {
+      if (!prev) return null;
+      const next = { ...prev, hasContactlessCode: true };
+      void cacheOfflineProfile(next);
+      return next;
+    });
   };
 
   // Verify PIN
@@ -387,7 +467,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
       .eq('id', user.id);
 
-    setProfile((prev) => (prev ? { ...prev, avatar: publicUrl } : null));
+    setProfile((prev) => {
+      if (!prev) return null;
+      const next = { ...prev, avatar: publicUrl };
+      void cacheOfflineProfile(next);
+      return next;
+    });
 
     return publicUrl;
   };
@@ -425,7 +510,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
     if (error) throw new Error(error.message);
 
-    setProfile((prev) => (prev ? { ...prev, ...partial } : null));
+    setProfile((prev) => {
+      if (!prev) return null;
+      const next = { ...prev, ...partial };
+      void cacheOfflineProfile(next);
+      return next;
+    });
   };
 
   const updateAvatar = async (avatarUrl: string) => {
@@ -440,12 +530,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile,
         isLoading,
         hasPin: Boolean(profile?.hasPin),
+        hasContactlessCode: Boolean(profile?.hasContactlessCode),
         signIn,
         signUp,
         signOut,
         sendPasswordReset,
         resendVerificationEmail,
         setupPin,
+        setContactlessCode,
         verifyPin,
         changePin,
         resetPin,
