@@ -5,6 +5,7 @@ import {
     Clock01Icon,
     MoreHorizontalIcon,
     Notification03Icon,
+    RotateRight01Icon,
     Sent02Icon,
     Tick02Icon,
     UserIcon,
@@ -304,7 +305,8 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
               </Text>
             </View>
             <View style={[styles.checkInPromptButton, { backgroundColor: t.brand }]}>
-              <Text style={styles.checkInPromptButtonText}>Spin 🎰</Text>
+              <HugeiconsIcon icon={RotateRight01Icon} size={14} color="#FFFFFF" strokeWidth={2.2} />
+              <Text style={styles.checkInPromptButtonText}>Spin</Text>
             </View>
           </TouchableOpacity>
         )}
@@ -430,7 +432,16 @@ const styles = StyleSheet.create({
   checkInPromptEyebrow: { fontFamily: 'Montserrat_700Bold', fontSize: 8.5, letterSpacing: 0.7 },
   checkInPromptTitle: { fontFamily: 'Montserrat_700Bold', fontSize: 13, marginTop: 2 },
   checkInPromptReward: { fontFamily: 'Montserrat_500Medium', fontSize: 10.5, marginTop: 2 },
-  checkInPromptButton: { minWidth: 67, height: 34, borderRadius: 11, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+  checkInPromptButton: {
+    minWidth: 70,
+    height: 34,
+    borderRadius: 11,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+  },
   checkInPromptButtonText: { fontFamily: 'Montserrat_700Bold', fontSize: 10, color: '#FFFFFF' },
   hero: {
     borderBottomLeftRadius: 28,

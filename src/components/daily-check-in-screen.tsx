@@ -2,7 +2,11 @@ import {
   ArrowLeft01Icon,
   Calendar03Icon,
   CheckmarkCircle02Icon,
+  CircleArrowReload01Icon,
+  CircleLock01Icon,
   Clock01Icon,
+  GiftIcon,
+  RotateRight01Icon,
   SparklesIcon,
   Tick02Icon,
 } from '@hugeicons/core-free-icons';
@@ -311,7 +315,10 @@ export default function DailyCheckInScreen() {
                 {isCheckingIn ? (
                   <ActivityIndicator color="#FFFFFF" size="small" />
                 ) : (
-                  <Text style={styles.checkButtonText}>Spin 🎰</Text>
+                  <View style={styles.rowBtnInner}>
+                    <HugeiconsIcon icon={RotateRight01Icon} size={13} color="#FFFFFF" strokeWidth={2.4} />
+                    <Text style={styles.checkButtonText}>Spin</Text>
+                  </View>
                 )}
               </TouchableOpacity>
             </View>
@@ -363,8 +370,9 @@ export default function DailyCheckInScreen() {
         <View style={styles.spinModalOverlay}>
           <View style={[styles.spinCard, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
             <View style={[styles.spinHeaderBadge, { backgroundColor: t.brandTint }]}>
+              <HugeiconsIcon icon={GiftIcon} size={13} color={t.brand} />
               <Text style={[styles.spinBadgeText, { color: t.brand }]}>
-                🎰 {activeSpinDay?.dayName.toUpperCase()} LUCKY SPIN
+                {activeSpinDay?.dayName.toUpperCase()} LUCKY SPIN
               </Text>
             </View>
 
@@ -384,7 +392,7 @@ export default function DailyCheckInScreen() {
               ]}>
               {spinOptions[highlightedIndex]?.isTryAgain ? (
                 <View style={styles.tryAgainReelWrap}>
-                  <Text style={styles.tryAgainIcon}>🔄</Text>
+                  <HugeiconsIcon icon={CircleArrowReload01Icon} size={30} color="#F59E0B" strokeWidth={2.4} />
                   <Text style={styles.tryAgainReelText}>Try Again</Text>
                 </View>
               ) : (
@@ -441,8 +449,9 @@ export default function DailyCheckInScreen() {
             {/* If landed on Try Again banner */}
             {landedTryAgain && (
               <View style={styles.tryAgainBanner}>
+                <HugeiconsIcon icon={CircleArrowReload01Icon} size={15} color="#D97706" strokeWidth={2.2} />
                 <Text style={styles.tryAgainBannerText}>
-                  Almost had it! You got &quot;Try Again&quot;. Spin once more! 🔄
+                  Almost had it! You got &quot;Try Again&quot;. Spin once more!
                 </Text>
               </View>
             )}
@@ -459,9 +468,12 @@ export default function DailyCheckInScreen() {
                   <Text style={styles.spinActionBtnText}>Spinning...</Text>
                 </View>
               ) : (
-                <Text style={styles.spinActionBtnText}>
-                  {landedTryAgain ? 'Spin Again 🔄' : 'Spin to Reveal 🎰'}
-                </Text>
+                <View style={styles.spinBtnContent}>
+                  <HugeiconsIcon icon={RotateRight01Icon} size={16} color="#FFFFFF" strokeWidth={2.2} />
+                  <Text style={styles.spinActionBtnText}>
+                    {landedTryAgain ? 'Spin Again' : 'Spin to Reveal'}
+                  </Text>
+                </View>
               )}
             </TouchableOpacity>
 
@@ -596,7 +608,10 @@ function DayRow({
             {isCheckingIn ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={styles.rowCheckInBtnText}>Spin 🎰</Text>
+              <View style={styles.rowBtnInner}>
+                <HugeiconsIcon icon={RotateRight01Icon} size={12} color="#FFFFFF" strokeWidth={2.4} />
+                <Text style={styles.rowCheckInBtnText}>Spin</Text>
+              </View>
             )}
           </TouchableOpacity>
         ) : isCompleted ? (
@@ -610,7 +625,8 @@ function DayRow({
           </View>
         ) : (
           <View style={[styles.statusPill, { backgroundColor: t.chipBg }]}>
-            <Text style={[styles.statusPillText, { color: t.muted }]}>Locked 🔒</Text>
+            <HugeiconsIcon icon={CircleLock01Icon} size={11} color={t.muted} />
+            <Text style={[styles.statusPillText, { color: t.muted }]}>Locked</Text>
           </View>
         )}
       </View>
@@ -750,6 +766,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  rowBtnInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
   rowCheckInBtnText: { fontFamily: 'Montserrat_700Bold', fontSize: 10.5, color: '#FFFFFF' },
   statusPill: {
     flexDirection: 'row',
@@ -859,6 +881,10 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     marginBottom: 14,
     width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
   },
   tryAgainBannerText: {
     fontFamily: 'Montserrat_600SemiBold',
