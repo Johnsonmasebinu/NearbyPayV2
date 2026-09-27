@@ -40,6 +40,9 @@ yarn-error.*
 /ios
 /android
 
+# gradle compilation outputs (regenerated on every build)
+/modules/nearby-ble/android/build
+
 # local env files
 .env
 

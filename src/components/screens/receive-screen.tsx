@@ -118,17 +118,11 @@ export function ReceiveScreen() {
           {/* Logo & Header */}
           <View style={styles.qrHeader}>
             <View style={styles.logoRow}>
-              {/* NearbyPay N Emblem */}
-              <Svg width={28} height={28} viewBox="0 0 32 32" fill="none">
-                <Rect width={32} height={32} rx={16} fill="#FFFFFF" opacity={0.25} />
-                <Path
-                  d="M10 22V10L22 22V10"
-                  stroke="#FFFFFF"
-                  strokeWidth={3.5}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </Svg>
+              <Image
+                source={require('@/assets/images/logo/logo.png')}
+                style={styles.logoMark}
+                resizeMode="contain"
+              />
               <Text style={styles.logoText}>NearbyPay</Text>
             </View>
             <Text style={styles.qrSubtitle}>
@@ -387,6 +381,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginBottom: 8,
+  },
+  logoMark: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
   },
   logoText: {
     fontFamily: 'Montserrat_700Bold',

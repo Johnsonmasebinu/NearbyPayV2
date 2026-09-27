@@ -163,7 +163,7 @@ export default function TransactionHistoryScreen({
 
       const { status } = await MediaLibrary.requestPermissionsAsync();
       if (status === 'granted') {
-        await MediaLibrary.saveToLibraryAsync(uri);
+        await MediaLibrary.Asset.create(uri);
         show({ message: 'Receipt image saved to your gallery!', variant: 'success' });
       } else if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri, {
