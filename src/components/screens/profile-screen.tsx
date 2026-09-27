@@ -648,16 +648,24 @@ export function ProfileScreen() {
                 </View>
               ) : (
                 <View style={[styles.qrCodeWrapper, styles.qrCodeDisabled, { borderColor: t.cardBorder }]}>
+                  <View style={[styles.qrLockIconCircle, { backgroundColor: t.brandTint }]}>
+                    <HugeiconsIcon icon={LockPasswordIcon} size={24} color={t.brand} strokeWidth={2.2} />
+                  </View>
+                  <Text style={[styles.qrSetupModalTitle, { color: t.textPrimary }]}>
+                    Activate Receive QR
+                  </Text>
                   <Text style={[styles.sheetSubtitle, { color: t.textSecondary, textAlign: 'center' }]}>
-                    Enable your 8-digit contactless code to show this receive QR.
+                    Set an 8-digit contactless PIN to safeguard transfers and unlock your QR code.
                   </Text>
                   <TouchableOpacity
-                    style={[styles.sheetActionBtnPrimary, { backgroundColor: t.brand }]}
+                    style={[styles.qrSetupBtn, { backgroundColor: t.brand }]}
+                    activeOpacity={0.85}
                     onPress={() => {
                       setQrSheetVisible(false);
                       setContactlessSheetVisible(true);
                     }}>
-                    <Text style={styles.sheetActionBtnPrimaryText}>Set up code</Text>
+                    <HugeiconsIcon icon={LockPasswordIcon} size={15} color="#FFFFFF" strokeWidth={2.2} />
+                    <Text style={styles.sheetActionBtnPrimaryText}>Set Up 8-Digit PIN</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -1325,11 +1333,36 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   qrCodeDisabled: {
-    width: 222,
-    minHeight: 190,
+    width: 232,
+    minHeight: 200,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 14,
+    gap: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 12,
+  },
+  qrLockIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  qrSetupModalTitle: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 14.5,
+    textAlign: 'center',
+  },
+  qrSetupBtn: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    paddingVertical: 11,
+    borderRadius: 12,
+    marginTop: 6,
   },
   qrTagChip: {
     paddingHorizontal: 14,

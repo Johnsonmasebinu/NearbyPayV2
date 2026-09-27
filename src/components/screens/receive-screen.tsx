@@ -2,12 +2,15 @@ import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
   BubbleChatIcon,
+  CheckmarkBadge01Icon,
   Copy01Icon,
   HelpCircleIcon,
   Link01Icon,
+  LockPasswordIcon,
   MoreHorizontalIcon,
   Share08Icon,
   ShieldCheckIcon,
+  ShieldKeyIcon,
   TelegramIcon,
   WhatsappIcon,
 } from '@hugeicons/core-free-icons';
@@ -16,6 +19,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
   Platform,
   ScrollView,
@@ -137,7 +141,9 @@ export function ReceiveScreen() {
               <Text style={styles.logoText}>NearbyPay</Text>
             </View>
             <Text style={styles.qrSubtitle}>
-              Scan this QR code with NearbyPay to send to @{cleanTag}
+              {hasContactlessCode
+                ? `Scan this QR code with NearbyPay to send to @${cleanTag}`
+                : `Set up your security code to reveal your personal receive QR`}
             </Text>
           </View>
 
@@ -154,20 +160,58 @@ export function ReceiveScreen() {
           </View>
 
           {/* QR Code Container */}
-          <View style={styles.qrSquare}>
+          <View style={[styles.qrContainer, !hasContactlessCode && styles.qrContainerSetup]}>
             {hasContactlessCode && receiveQr?.tag === cleanTag ? (
-              <QRCodeView value={receiveQr.payload} size={170} color="#0F172A" />
+              <View style={styles.qrSquare}>
+                <QRCodeView value={receiveQr.payload} size={170} color="#0F172A" />
+              </View>
             ) : hasContactlessCode ? (
-              <Text style={styles.qrSetupText}>Preparing secure QR...</Text>
+              <View style={styles.qrSquare}>
+                <ActivityIndicator color={GRADIENT_STOPS.from} size="small" />
+                <Text style={styles.qrSetupLoadingText}>Preparing secure QR...</Text>
+              </View>
             ) : (
-              <View style={styles.qrSetupPrompt}>
-                <Text style={styles.qrSetupText}>Enable your 8-digit contactless code to show your receive QR.</Text>
+              <View style={styles.qrSetupCard}>
+                {/* Security Badge Pill */}
+                <View style={styles.setupBadgePill}>
+                  <HugeiconsIcon icon={ShieldKeyIcon} size={13} color="#2563EB" strokeWidth={2.4} />
+                  <Text style={styles.setupBadgeText}>ONE-TIME SECURITY ACTIVATION</Text>
+                </View>
+
+                {/* Icon Circle */}
+                <View style={styles.setupIconCircle}>
+                  <HugeiconsIcon icon={LockPasswordIcon} size={28} color="#2563EB" strokeWidth={2.2} />
+                </View>
+
+                {/* Title & Subtitle */}
+                <Text style={styles.setupTitle}>Protect Your Receive QR</Text>
+                <Text style={styles.setupSubtitle}>
+                  Set an 8-digit contactless PIN to safeguard offline transfers and unlock your instant payment QR code.
+                </Text>
+
+                {/* Trust / Benefit Chips */}
+                <View style={styles.setupBenefitsRow}>
+                  <View style={styles.setupBenefitChip}>
+                    <HugeiconsIcon icon={CheckmarkBadge01Icon} size={13} color="#16A34A" strokeWidth={2.2} />
+                    <Text style={styles.setupBenefitText}>Offline Protection</Text>
+                  </View>
+                  <View style={styles.setupBenefitChip}>
+                    <HugeiconsIcon icon={CheckmarkBadge01Icon} size={13} color="#16A34A" strokeWidth={2.2} />
+                    <Text style={styles.setupBenefitText}>Instant Receive</Text>
+                  </View>
+                </View>
+
+                {/* Primary Action Button */}
                 <TouchableOpacity
-                  style={styles.cardActionBtnPrimary}
+                  style={styles.setupActionBtn}
                   activeOpacity={0.85}
                   onPress={() => setContactlessSheetVisible(true)}>
-                  <Text style={styles.cardActionTextPrimary}>Set up code</Text>
+                  <HugeiconsIcon icon={LockPasswordIcon} size={16} color="#FFFFFF" strokeWidth={2.2} />
+                  <Text style={styles.setupActionBtnText}>Set Up 8-Digit PIN</Text>
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={15} color="#FFFFFF" strokeWidth={2.4} />
                 </TouchableOpacity>
+
+                <Text style={styles.setupFootnote}>Takes ~30 seconds • Bank-grade PIN protection</Text>
               </View>
             )}
           </View>
@@ -394,6 +438,14 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: 'rgba(255, 255, 255, 0.85)',
   },
+  qrContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  qrContainerSetup: {
+    width: '100%',
+  },
   qrSquare: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
@@ -407,19 +459,121 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 4,
   },
-  qrSetupPrompt: {
-    width: 170,
-    minHeight: 170,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  qrSetupText: {
+  qrSetupLoadingText: {
     fontFamily: 'Montserrat_500Medium',
     fontSize: 12,
-    color: '#334155',
+    color: '#64748B',
+    marginTop: 8,
+  },
+  qrSetupCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 18,
+    alignItems: 'center',
+    width: '100%',
+    shadowColor: '#0A1240',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.14,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  setupBadgePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+    marginBottom: 12,
+  },
+  setupBadgeText: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 9.5,
+    letterSpacing: 0.8,
+    color: '#2563EB',
+  },
+  setupIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#EEF2FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E0E7FF',
+  },
+  setupTitle: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 16.5,
+    color: '#0F172A',
     textAlign: 'center',
-    lineHeight: 17,
+    letterSpacing: -0.3,
+  },
+  setupSubtitle: {
+    fontFamily: 'Montserrat_400Regular',
+    fontSize: 12,
+    color: '#475569',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginTop: 6,
+    marginBottom: 14,
+  },
+  setupBenefitsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  setupBenefitChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 9,
+    paddingVertical: 4.5,
+    borderRadius: 8,
+  },
+  setupBenefitText: {
+    fontFamily: 'Montserrat_600SemiBold',
+    fontSize: 10.5,
+    color: '#334155',
+  },
+  setupActionBtn: {
+    width: '100%',
+    height: 46,
+    backgroundColor: '#2E45F4',
+    borderRadius: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    ...Platform.select({
+      ios: { shadowColor: '#2E45F4', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 8 },
+      android: { elevation: 3 },
+      web: { shadowColor: '#2E45F4', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 8 },
+    }),
+  },
+  setupActionBtnText: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 13,
+    color: '#FFFFFF',
+    letterSpacing: 0.2,
+  },
+  setupFootnote: {
+    fontFamily: 'Montserrat_500Medium',
+    fontSize: 10.5,
+    color: '#94A3B8',
+    textAlign: 'center',
+    marginTop: 10,
   },
   cardActionsRow: {
     flexDirection: 'row',
