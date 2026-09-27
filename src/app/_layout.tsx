@@ -131,6 +131,7 @@ function RootShell() {
               <Stack.Screen name="index" />
               <Stack.Screen name="more" />
               <Stack.Screen name="check-in" />
+              <Stack.Screen name="wallet" />
             </Stack>
             {!hasPin && !pinSheetDismissed && (
               <PinSheet

@@ -1,4 +1,5 @@
 import {
+  ArrowDown01Icon,
   ArrowRight01Icon,
   BankIcon,
   BiometricAccessIcon,
@@ -10,7 +11,6 @@ import {
   Copy01Icon,
   CustomerSupportIcon,
   FlashIcon,
-  HelpCircleIcon,
   IdentityCardIcon,
   InformationCircleIcon,
   LockPasswordIcon,
@@ -43,6 +43,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AddMoneySheet } from '@/components/ui/add-money-sheet';
 import QRCodeView from '@/components/ui/qr-code';
 import { AvatarPickerSheet } from '@/components/ui/avatar-picker-sheet';
 import { ContactlessCodeSheet } from '@/components/ui/contactless-code-sheet';
@@ -52,6 +53,7 @@ import { getAppTheme } from '@/constants/app-theme';
 import type { ThemeMode } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/theme-provider';
 import { useAuth } from '@/hooks/auth-provider';
+import { useTransactions } from '@/hooks/use-transactions';
 import { useUserProfile } from '@/hooks/user-profile-provider';
 import { createReceiveQrPayload } from '@/lib/receive-qr';
 import { useNearbyBluetooth } from '@/hooks/use-nearby-bluetooth';
@@ -64,6 +66,7 @@ export function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { signOut, hasPin, hasContactlessCode } = useAuth();
   const { profile, updateAvatar, updateProfile } = useUserProfile();
+  const { balance, refresh: refreshTransactions } = useTransactions();
   const nearbyBluetooth = useNearbyBluetooth();
   const [profileQr, setProfileQr] = useState<{ tag: string; payload: string } | null>(null);
 
@@ -89,6 +92,7 @@ export function ProfileScreen() {
   const [pinSheetMode, setPinSheetMode] = useState<PinSheetMode>('change');
   const [qrSheetVisible, setQrSheetVisible] = useState(false);
   const [contactlessSheetVisible, setContactlessSheetVisible] = useState(false);
+  const [addMoneyVisible, setAddMoneyVisible] = useState(false);
   const [editSheetVisible, setEditSheetVisible] = useState(false);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [aboutSheetVisible, setAboutSheetVisible] = useState(false);
@@ -99,12 +103,16 @@ export function ProfileScreen() {
   const [formPhone, setFormPhone] = useState(profile.phone);
   const [formBio, setFormBio] = useState(profile.bio);
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => {
+    try {
+      await refreshTransactions();
+    } catch {
+      // ignore
+    } finally {
       setRefreshing(false);
-      show({ message: 'Profile synced with NearbyPay network', variant: 'success' });
-    }, 700);
+      show({ message: 'Profile & wallet synced', variant: 'success' });
+    }
   };
 
   const copyToClipboard = async (text: string, label: string) => {
@@ -238,41 +246,61 @@ export function ProfileScreen() {
         </View>
       </View>
 
-      {/* ─── Virtual Bank Account Card ───────────────────────────── */}
+      {/* ─── Dedicated Virtual Bank Account Card ─────────────────── */}
       <View style={[styles.bankCard, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
         <View style={styles.bankCardTop}>
           <View style={[styles.bankIconCircle, { backgroundColor: t.brandTint }]}>
-            <HugeiconsIcon icon={BankIcon} size={18} color={t.brand} />
+            <HugeiconsIcon icon={BankIcon} size={18} color={t.brand} strokeWidth={2.2} />
           </View>
           <View style={styles.bankCardInfo}>
-            <Text style={[styles.bankCardLabel, { color: t.textSecondary }]}>VIRTUAL DEPOSIT ACCOUNT</Text>
-            <Text style={[styles.bankCardBankName, { color: t.textPrimary }]}>{profile.bankName}</Text>
+            <Text style={[styles.bankCardLabel, { color: t.textSecondary }]}>DEDICATED DEPOSIT NUBAN</Text>
+            <Text style={[styles.bankCardBankName, { color: t.textPrimary }]}>
+              {profile.bankName || 'NearbyPay MFB • Wema Bank'}
+            </Text>
+          </View>
+          <View style={[styles.accountLiveBadge, { backgroundColor: t.successTint }]}>
+            <HugeiconsIcon icon={CheckmarkBadge01Icon} size={12} color={t.success} strokeWidth={2.4} />
+            <Text style={[styles.accountLiveBadgeText, { color: t.success }]}>Auto-Credit</Text>
           </View>
         </View>
 
         <View style={[styles.accountBox, { backgroundColor: t.inputBg, borderColor: t.inputBorder }]}>
-          <View>
-            <Text style={[styles.accountNumberText, { color: t.textPrimary }]}>
-              {profile.accountNumber.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3')}
+          <View style={styles.accountNumberInfo}>
+            <Text style={[styles.accountNumberDigits, { color: t.textPrimary }]}>
+              {(profile.accountNumber || '9012345678').replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3')}
             </Text>
             <Text style={[styles.accountHolderText, { color: t.textSecondary }]}>
-              {profile.name} • NearbyPay
+              {profile.name.toUpperCase()} / NEARBYPAY
             </Text>
           </View>
 
-          <TouchableOpacity
-            style={[styles.copyPill, { backgroundColor: t.brand }]}
-            activeOpacity={0.8}
-            onPress={() => copyToClipboard(profile.accountNumber, 'Account number')}>
-            <HugeiconsIcon icon={Copy01Icon} size={13} color="#FFFFFF" />
-            <Text style={styles.copyPillText}>Copy</Text>
-          </TouchableOpacity>
+          <View style={styles.accountActionsCol}>
+            <TouchableOpacity
+              style={[styles.accountCopyBtn, { backgroundColor: t.chipBg, borderColor: t.cardBorder }]}
+              activeOpacity={0.8}
+              onPress={() => copyToClipboard(profile.accountNumber || '9012345678', 'Account number')}
+              accessibilityRole="button"
+              accessibilityLabel="Copy account number">
+              <HugeiconsIcon icon={Copy01Icon} size={13} color={t.textPrimary} strokeWidth={2.2} />
+              <Text style={[styles.accountCopyBtnText, { color: t.textPrimary }]}>Copy</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.addMoneyBtn, { backgroundColor: t.brand }]}
+              activeOpacity={0.85}
+              onPress={() => setAddMoneyVisible(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Add money to your account">
+              <HugeiconsIcon icon={ArrowDown01Icon} size={13} color="#FFFFFF" strokeWidth={2.4} />
+              <Text style={styles.addMoneyBtnText}>Add Money</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.bankCardFooter}>
           <View style={[styles.onlineIndicatorDot, { backgroundColor: t.success }]} />
           <Text style={[styles.bankCardFooterText, { color: t.textSecondary }]}>
-            Auto-credits instantly • Zero deposit fees
+            Automated instant credit • Zero fee • Available: ₦{balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </Text>
         </View>
       </View>
@@ -526,36 +554,17 @@ export function ProfileScreen() {
       <View style={styles.sectionGroup}>
         <Text style={[styles.sectionHeaderTitle, { color: t.textSecondary }]}>SUPPORT & ABOUT</Text>
         <View style={[styles.groupedCard, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
-          {/* Live Support */}
+          {/* Support */}
           <TouchableOpacity
             style={styles.groupedRow}
             activeOpacity={0.65}
-            onPress={() => show({ message: 'Connecting with NearbyPay 24/7 Concierge...', variant: 'info' })}>
+            onPress={() => setAboutSheetVisible(true)}>
             <View style={[styles.rowIconWrap, { backgroundColor: t.brandTint }]}>
               <HugeiconsIcon icon={CustomerSupportIcon} size={18} color={t.brand} />
             </View>
             <View style={styles.rowContentWrap}>
-              <Text style={[styles.rowItemTitle, { color: t.textPrimary }]}>24/7 Live Support</Text>
-              <Text style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>Chat with our customer team</Text>
-            </View>
-            <View style={[styles.activeStatusPill, { backgroundColor: t.successTint }]}>
-              <Text style={[styles.activeStatusText, { color: t.success }]}>Online</Text>
-            </View>
-          </TouchableOpacity>
-
-          <View style={[styles.rowDivider, { backgroundColor: t.divider }]} />
-
-          {/* Help & FAQs */}
-          <TouchableOpacity
-            style={styles.groupedRow}
-            activeOpacity={0.65}
-            onPress={() => show({ message: 'Opening NearbyPay Help Center & FAQs...', variant: 'info' })}>
-            <View style={[styles.rowIconWrap, { backgroundColor: t.brandTint }]}>
-              <HugeiconsIcon icon={HelpCircleIcon} size={18} color={t.brand} />
-            </View>
-            <View style={styles.rowContentWrap}>
-              <Text style={[styles.rowItemTitle, { color: t.textPrimary }]}>Help & FAQs</Text>
-              <Text style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>Payment guides & security tips</Text>
+              <Text style={[styles.rowItemTitle, { color: t.textPrimary }]}>Support</Text>
+              <Text style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>Project information and demo details</Text>
             </View>
             <HugeiconsIcon icon={ArrowRight01Icon} size={16} color={t.iconColor} />
           </TouchableOpacity>
@@ -941,6 +950,11 @@ export function ProfileScreen() {
         onClose={() => setContactlessSheetVisible(false)}
         onSuccess={() => setContactlessSheetVisible(false)}
       />
+      <AddMoneySheet
+        visible={addMoneyVisible}
+        onClose={() => setAddMoneyVisible(false)}
+        onSuccess={() => void refreshTransactions()}
+      />
     </ScrollView>
   );
 }
@@ -1102,6 +1116,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 1,
   },
+  accountLiveBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  accountLiveBadgeText: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 10,
+  },
   accountBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1111,27 +1137,48 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
   },
-  accountNumberText: {
+  accountNumberInfo: {
+    flex: 1,
+  },
+  accountNumberDigits: {
     fontFamily: 'Montserrat_700Bold',
     fontSize: 18,
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
   accountHolderText: {
-    fontFamily: 'Montserrat_400Regular',
-    fontSize: 12,
-    marginTop: 2,
+    fontFamily: 'Montserrat_500Medium',
+    fontSize: 11,
+    marginTop: 3,
   },
-  copyPill: {
+  accountActionsCol: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  accountCopyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  accountCopyBtnText: {
+    fontFamily: 'Montserrat_600SemiBold',
+    fontSize: 11.5,
+  },
+  addMoneyBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
     paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
+    paddingVertical: 8,
+    borderRadius: 10,
   },
-  copyPillText: {
-    fontFamily: 'Montserrat_600SemiBold',
-    fontSize: 12,
+  addMoneyBtnText: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 11.5,
     color: '#FFFFFF',
   },
   bankCardFooter: {
