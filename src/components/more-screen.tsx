@@ -29,6 +29,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { useToast } from '@/components/ui/toast';
 import { getAppTheme } from '@/constants/app-theme';
+import { useAuth } from '@/hooks/auth-provider';
 import { useAppTheme } from '@/hooks/theme-provider';
 import { useUserProfile } from '@/hooks/user-profile-provider';
 
@@ -129,34 +130,53 @@ const RECENT_BILLS = [
   },
 ];
 
+type RecentBill = (typeof RECENT_BILLS)[number];
+
 export default function MoreScreen({ onBack }: { onBack?: () => void }) {
   const { isDark } = useAppTheme();
   const t = getAppTheme(isDark);
   const insets = useSafeAreaInsets();
   const { show } = useToast();
   const { profile } = useUserProfile();
+  const { user } = useAuth();
 
   const [activeService, setActiveService] = useState<BillService | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<string>('');
+  const [recentBills, setRecentBills] = useState<RecentBill[]>(RECENT_BILLS);
   const [accountInput, setAccountInput] = useState<string>('');
   const [amountInput, setAmountInput] = useState<string>('');
   const [meterType, setMeterType] = useState<'Prepaid' | 'Postpaid'>('Prepaid');
   const [isProcessing, setIsProcessing] = useState(false);
   const [successReceipt, setSuccessReceipt] = useState<{
     service: string;
+    provider: string;
     account: string;
     amount: string;
+    timestamp: string;
+    reference: string;
     token?: string;
   } | null>(null);
+
+  const myPhone = profile.phone.trim() ||
+    (typeof user?.user_metadata?.phone === 'string' ? user.user_metadata.phone.trim() : '');
 
   const openService = (service: BillService) => {
     setActiveService(service);
     setSelectedProvider(service.providers[0]);
-    setAccountInput(service.id === 'airtime' || service.id === 'data' ? profile.phone : '');
+    setAccountInput(service.id === 'airtime' || service.id === 'data' ? myPhone : '');
     setAmountInput(service.quickAmounts[1] ? String(service.quickAmounts[1]) : '1000');
   };
 
+  const useMyPhone = () => {
+    if (!myPhone) {
+      show({ message: 'Add your phone number to your profile first.', variant: 'error' });
+      return;
+    }
+    setAccountInput(myPhone);
+  };
+
   const handlePay = () => {
+    if (!activeService) return;
     if (!accountInput.trim()) {
       show({ message: `Please enter a valid ${activeService?.inputLabel.toLowerCase()}`, variant: 'error' });
       return;
@@ -170,19 +190,37 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
     setIsProcessing(true);
     setTimeout(() => {
       setIsProcessing(false);
-      const isLight = activeService?.id === 'light';
-      const token = isLight ? '4820-1928-3920-1049' : undefined;
+      const completedAt = new Date();
+      const amount = `₦${numAmount.toLocaleString()}`;
+      const reference = `TEST-${completedAt.getTime()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+      const isLight = activeService.id === 'light';
+      const token = isLight ? `TEST-${Math.random().toString(36).slice(2, 10).toUpperCase()}` : undefined;
 
       setSuccessReceipt({
-        service: activeService?.label || 'Utility',
+        service: activeService.label,
+        provider: selectedProvider,
         account: accountInput,
-        amount: `₦${numAmount.toLocaleString()}`,
+        amount,
+        timestamp: completedAt.toLocaleString(),
+        reference,
         token,
       });
+      setRecentBills((current) => [
+        {
+          id: reference,
+          service: activeService.label,
+          title: `${selectedProvider} ${activeService.label} Test Payment`,
+          account: accountInput,
+          amount,
+          date: completedAt.toLocaleString(),
+          icon: activeService.icon,
+        },
+        ...current,
+      ].slice(0, 5));
 
       show({
-        message: `${activeService?.label} payment of ₦${numAmount.toLocaleString()} successful!`,
-        variant: 'success',
+        message: `Test-mode ${activeService.label} payment simulated. No money was charged.`,
+        variant: 'info',
       });
     }, 1200);
   };
@@ -337,14 +375,14 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: t.textPrimary }]}>Recent Utility Payments</Text>
             <Text style={[styles.sectionSubtitle, { color: t.textSecondary }]}>
-              Quickly re-order previous bills
+              Demo history · this session only · no real purchases
             </Text>
           </View>
 
           <View style={[styles.recentBillsCard, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
-            {RECENT_BILLS.map((item, idx) => {
+            {recentBills.map((item, idx) => {
               const isBulb = item.service === 'Light';
-              const isLast = idx === RECENT_BILLS.length - 1;
+              const isLast = idx === recentBills.length - 1;
               return (
                 <TouchableOpacity
                   key={item.id}
@@ -514,7 +552,7 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
                     </Text>
                     {(activeService?.id === 'airtime' || activeService?.id === 'data') && (
                       <TouchableOpacity
-                        onPress={() => setAccountInput(profile.phone)}
+                        onPress={useMyPhone}
                         activeOpacity={0.7}>
                         <Text style={[styles.autofillText, { color: t.brand }]}>Use My Phone</Text>
                       </TouchableOpacity>
@@ -586,7 +624,7 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
                   </View>
                   <View style={styles.summaryLine}>
                     <Text style={[styles.summaryLabel, { color: t.muted }]}>Payment Source</Text>
-                    <Text style={[styles.summaryVal, { color: t.textPrimary }]}>NearbyPay Wallet</Text>
+                    <Text style={[styles.summaryVal, { color: t.warning }]}>Demo wallet · not charged</Text>
                   </View>
                 </View>
               </ScrollView>
@@ -601,6 +639,9 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
                   {isProcessing ? 'Processing Transaction...' : `Pay ₦${parseFloat(amountInput || '0').toLocaleString()}`}
                 </Text>
               </TouchableOpacity>
+              <View style={[styles.testModeNotice, { backgroundColor: t.warningTint, borderColor: t.warning }]}>
+                <Text style={[styles.testModeNoticeText, { color: t.warning }]}>TEST MODE · No real payment will be made</Text>
+              </View>
             </View>
           </View>
         </Modal>
@@ -617,17 +658,20 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
                 <HugeiconsIcon icon={CheckmarkBadge01Icon} size={32} color={t.success} />
               </View>
 
-              <Text style={[styles.receiptHeading, { color: t.textPrimary }]}>Bill Paid Successfully!</Text>
+              <View style={[styles.testModeBadge, { backgroundColor: t.warningTint, borderColor: t.warning }]}>
+                <Text style={[styles.testModeBadgeText, { color: t.warning }]}>TEST MODE · SIMULATED</Text>
+              </View>
+              <Text style={[styles.receiptHeading, { color: t.textPrimary }]}>Demo Payment Complete</Text>
               <Text style={[styles.receiptSubhead, { color: t.textSecondary }]}>
-                Your {successReceipt?.service} purchase has been delivered instantly.
+                This is a hackathon demo. No money was charged and no real bill or service was delivered.
               </Text>
 
               {/* Token box for light */}
               {successReceipt?.token && (
                 <View style={[styles.tokenBox, { backgroundColor: t.warningTint, borderColor: t.warning }]}>
-                  <Text style={[styles.tokenLabel, { color: t.warning }]}>ELECTRICITY TOKEN</Text>
+                  <Text style={[styles.tokenLabel, { color: t.warning }]}>DEMO TOKEN · NOT VALID</Text>
                   <Text style={[styles.tokenCode, { color: t.textPrimary }]}>{successReceipt.token}</Text>
-                  <Text style={[styles.tokenSub, { color: t.textSecondary }]}>Enter this 20-digit code into your meter</Text>
+                  <Text style={[styles.tokenSub, { color: t.textSecondary }]}>For presentation only. Do not enter into a meter.</Text>
                 </View>
               )}
 
@@ -637,14 +681,26 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
                   <Text style={[styles.receiptValue, { color: t.textPrimary }]}>{successReceipt?.service}</Text>
                 </View>
                 <View style={styles.receiptLine}>
+                  <Text style={[styles.receiptLabel, { color: t.muted }]}>Provider</Text>
+                  <Text style={[styles.receiptValue, { color: t.textPrimary }]}>{successReceipt?.provider}</Text>
+                </View>
+                <View style={styles.receiptLine}>
                   <Text style={[styles.receiptLabel, { color: t.muted }]}>Account</Text>
                   <Text style={[styles.receiptValue, { color: t.textPrimary }]}>{successReceipt?.account}</Text>
                 </View>
                 <View style={styles.receiptLine}>
-                  <Text style={[styles.receiptLabel, { color: t.muted }]}>Amount Paid</Text>
+                  <Text style={[styles.receiptLabel, { color: t.muted }]}>Demo Amount</Text>
                   <Text style={[styles.receiptValue, { color: t.textPrimary, fontFamily: 'Montserrat_700Bold' }]}>
                     {successReceipt?.amount}
                   </Text>
+                </View>
+                <View style={styles.receiptLine}>
+                  <Text style={[styles.receiptLabel, { color: t.muted }]}>Date & Time</Text>
+                  <Text style={[styles.receiptValue, { color: t.textPrimary }]}>{successReceipt?.timestamp}</Text>
+                </View>
+                <View style={styles.receiptLine}>
+                  <Text style={[styles.receiptLabel, { color: t.muted }]}>Test Reference</Text>
+                  <Text style={[styles.receiptValue, { color: t.textPrimary }]}>{successReceipt?.reference}</Text>
                 </View>
               </View>
 
@@ -1079,6 +1135,30 @@ const styles = StyleSheet.create({
   },
 
   // Receipt Modal
+  testModeNotice: {
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 10,
+    marginTop: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  testModeNoticeText: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 10,
+    textAlign: 'center',
+  },
+  testModeBadge: {
+    borderWidth: 1,
+    borderRadius: 100,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  testModeBadgeText: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 10,
+    letterSpacing: 0.5,
+  },
   receiptCard: {
     margin: 20,
     borderRadius: 24,

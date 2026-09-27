@@ -4,7 +4,6 @@ import {
   BubbleChatIcon,
   CheckmarkBadge01Icon,
   Copy01Icon,
-  HelpCircleIcon,
   Link01Icon,
   LockPasswordIcon,
   MoreHorizontalIcon,
@@ -100,15 +99,7 @@ export function ReceiveScreen() {
           <HugeiconsIcon icon={ArrowLeft01Icon} size={18} color={t.textPrimary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: t.textPrimary }]}>Receive Money</Text>
-        <TouchableOpacity
-          style={[styles.headerBtn, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}
-          activeOpacity={0.7}
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel="Help and FAQs"
-          onPress={() => show({ message: 'Help & FAQs', variant: 'info' })}>
-          <HugeiconsIcon icon={HelpCircleIcon} size={18} color={t.textPrimary} />
-        </TouchableOpacity>
+        <View style={{ width: 38 }} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>

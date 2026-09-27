@@ -253,28 +253,25 @@ export function ProfileScreen() {
             <HugeiconsIcon icon={BankIcon} size={18} color={t.brand} strokeWidth={2.2} />
           </View>
           <View style={styles.bankCardInfo}>
-            <Text style={[styles.bankCardLabel, { color: t.textSecondary }]}>DEDICATED DEPOSIT NUBAN</Text>
+            <Text style={[styles.bankCardLabel, { color: t.textSecondary }]}>DEMO DEPOSIT NUBAN · TEST MODE</Text>
             <Text style={[styles.bankCardBankName, { color: t.textPrimary }]}>
               {profile.bankName || 'NearbyPay MFB • Wema Bank'}
             </Text>
           </View>
-          <View style={[styles.accountLiveBadge, { backgroundColor: t.successTint }]}>
-            <HugeiconsIcon icon={CheckmarkBadge01Icon} size={12} color={t.success} strokeWidth={2.4} />
-            <Text style={[styles.accountLiveBadgeText, { color: t.success }]}>Auto-Credit</Text>
+          <View style={[styles.testModeBadge, { backgroundColor: t.warningTint, borderColor: t.warning }]}>
+            <Text style={[styles.testModeBadgeText, { color: t.warning }]}>TEST MODE</Text>
           </View>
         </View>
 
         <View style={[styles.accountBox, { backgroundColor: t.inputBg, borderColor: t.inputBorder }]}>
-          <View style={styles.accountNumberInfo}>
-            <Text style={[styles.accountNumberDigits, { color: t.textPrimary }]}>
-              {(profile.accountNumber || '9012345678').replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3')}
-            </Text>
-            <Text style={[styles.accountHolderText, { color: t.textSecondary }]}>
-              {profile.name.toUpperCase()} / NEARBYPAY
-            </Text>
-          </View>
+          <View style={styles.accountNumberTopRow}>
+            <View>
+              <Text style={[styles.accountNumberLabel, { color: t.muted }]}>ACCOUNT NUMBER</Text>
+              <Text style={[styles.accountNumberDigits, { color: t.textPrimary }]}>
+                {(profile.accountNumber || '9012345678').replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3')}
+              </Text>
+            </View>
 
-          <View style={styles.accountActionsCol}>
             <TouchableOpacity
               style={[styles.accountCopyBtn, { backgroundColor: t.chipBg, borderColor: t.cardBorder }]}
               activeOpacity={0.8}
@@ -284,23 +281,34 @@ export function ProfileScreen() {
               <HugeiconsIcon icon={Copy01Icon} size={13} color={t.textPrimary} strokeWidth={2.2} />
               <Text style={[styles.accountCopyBtnText, { color: t.textPrimary }]}>Copy</Text>
             </TouchableOpacity>
+          </View>
 
-            <TouchableOpacity
-              style={[styles.addMoneyBtn, { backgroundColor: t.brand }]}
-              activeOpacity={0.85}
-              onPress={() => setAddMoneyVisible(true)}
-              accessibilityRole="button"
-              accessibilityLabel="Add money to your account">
-              <HugeiconsIcon icon={ArrowDown01Icon} size={13} color="#FFFFFF" strokeWidth={2.4} />
-              <Text style={styles.addMoneyBtnText}>Add Money</Text>
-            </TouchableOpacity>
+          <View style={styles.accountHolderDivider} />
+
+          <View style={styles.accountHolderRow}>
+            <Text style={[styles.accountHolderLabel, { color: t.muted }]}>ACCOUNT NAME</Text>
+            <Text style={[styles.accountHolderText, { color: t.textPrimary }]}>
+              {profile.name.toUpperCase()} / NEARBYPAY
+            </Text>
           </View>
         </View>
 
+        {/* Full-width Add Test Money Button */}
+        <TouchableOpacity
+          style={[styles.addMoneyFullBtn, { backgroundColor: t.brand }]}
+          activeOpacity={0.85}
+          onPress={() => setAddMoneyVisible(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Add test money to your account">
+          <HugeiconsIcon icon={ArrowDown01Icon} size={15} color="#FFFFFF" strokeWidth={2.4} />
+          <Text style={styles.addMoneyFullBtnText}>Add Test Money</Text>
+          <HugeiconsIcon icon={FlashIcon} size={14} color="rgba(255, 255, 255, 0.85)" strokeWidth={2.2} />
+        </TouchableOpacity>
+
         <View style={styles.bankCardFooter}>
-          <View style={[styles.onlineIndicatorDot, { backgroundColor: t.success }]} />
+          <View style={[styles.onlineIndicatorDot, { backgroundColor: t.warning }]} />
           <Text style={[styles.bankCardFooterText, { color: t.textSecondary }]}>
-            Automated instant credit • Zero fee • Available: ₦{balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            TEST MODE · Simulated automated credit · Available: ₦{balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </Text>
         </View>
       </View>
@@ -1116,70 +1124,90 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 1,
   },
-  accountLiveBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+  testModeBadge: {
+    borderWidth: 1,
+    borderRadius: 100,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
   },
-  accountLiveBadgeText: {
+  testModeBadgeText: {
     fontFamily: 'Montserrat_700Bold',
-    fontSize: 10,
+    fontSize: 9.5,
+    letterSpacing: 0.5,
   },
   accountBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderRadius: 14,
     borderWidth: 1,
+    gap: 8,
   },
-  accountNumberInfo: {
-    flex: 1,
+  accountNumberTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  accountNumberLabel: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 9,
+    letterSpacing: 0.8,
+    marginBottom: 2,
   },
   accountNumberDigits: {
     fontFamily: 'Montserrat_700Bold',
-    fontSize: 18,
+    fontSize: 20,
     letterSpacing: 1.2,
   },
-  accountHolderText: {
-    fontFamily: 'Montserrat_500Medium',
-    fontSize: 11,
-    marginTop: 3,
+  accountHolderDivider: {
+    height: 1,
+    backgroundColor: 'rgba(148, 163, 184, 0.15)',
   },
-  accountActionsCol: {
+  accountHolderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
+  },
+  accountHolderLabel: {
+    fontFamily: 'Montserrat_600SemiBold',
+    fontSize: 9,
+    letterSpacing: 0.6,
+  },
+  accountHolderText: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 11,
   },
   accountCopyBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
     borderWidth: 1,
   },
   accountCopyBtnText: {
-    fontFamily: 'Montserrat_600SemiBold',
-    fontSize: 11.5,
-  },
-  addMoneyBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  addMoneyBtnText: {
     fontFamily: 'Montserrat_700Bold',
     fontSize: 11.5,
+  },
+  addMoneyFullBtn: {
+    width: '100%',
+    height: 44,
+    borderRadius: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    ...Platform.select({
+      ios: { shadowColor: '#2E45F4', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.22, shadowRadius: 6 },
+      android: { elevation: 3 },
+      web: { shadowColor: '#2E45F4', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.22, shadowRadius: 6 },
+    }),
+  },
+  addMoneyFullBtnText: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 13,
     color: '#FFFFFF',
+    letterSpacing: 0.2,
   },
   bankCardFooter: {
     flexDirection: 'row',
