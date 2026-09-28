@@ -31,6 +31,7 @@ import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import { useToast } from '@/components/ui/toast';
 import { getAppTheme, GRADIENT_STOPS, HERO_STOPS } from '@/constants/app-theme';
 import { useAppTheme } from '@/hooks/theme-provider';
+import { select, tap } from '@/lib/haptics';
 import { useUserProfile } from '@/hooks/user-profile-provider';
 import { useTransactions } from '@/hooks/use-transactions';
 import { useDailyCheckIn } from '@/hooks/use-daily-check-in';
@@ -153,6 +154,7 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
   };
 
   const handleActionPress = (action: string) => {
+    tap();
     const act = action.toLowerCase();
     if (act === 'send' || act === 'receive' || act === 'history' || act === 'check-in' || act === 'more') {
       onNavigate(act as 'send' | 'receive' | 'history' | 'check-in' | 'more');
@@ -208,14 +210,20 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
               <TouchableOpacity
                 style={styles.notificationButton}
                 activeOpacity={0.7}
-                onPress={() => show({ message: 'You have 1 new payment alert', variant: 'info' })}>
+                onPress={() => {
+                  tap();
+                  show({ message: 'You have 1 new payment alert', variant: 'info' });
+                }}>
                 <HugeiconsIcon icon={Notification03Icon} size={18} color="#FFFFFF" />
                 <View style={styles.notificationDot} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.avatarButton}
                 activeOpacity={0.8}
-                onPress={() => onNavigate('profile' as any)}>
+                onPress={() => {
+                  select();
+                  onNavigate('profile' as any);
+                }}>
                 <Image
                   source={{ uri: profile.avatar }}
                   style={styles.avatarImage}
@@ -259,7 +267,10 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
             <View style={styles.balanceTopRow}>
               <Text style={styles.balanceLabel}>Total Balance</Text>
               <TouchableOpacity
-                onPress={() => setIsBalanceVisible(!isBalanceVisible)}
+                onPress={() => {
+                  tap();
+                  setIsBalanceVisible(!isBalanceVisible);
+                }}
                 activeOpacity={0.7}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 style={styles.eyeToggle}>
@@ -274,7 +285,10 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
             <TouchableOpacity
               style={styles.availableRow}
               activeOpacity={0.8}
-              onPress={() => onNavigate('history')}>
+              onPress={() => {
+                select();
+                onNavigate('history');
+              }}>
               <View>
                 <Text style={styles.availableLabel}>Available Balance</Text>
                 <Text style={styles.availableValue}>{isBalanceVisible ? formattedBalance : '****'}</Text>
@@ -291,7 +305,10 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
           <TouchableOpacity
             style={[styles.checkInPrompt, { backgroundColor: t.cardBg, borderColor: t.brandTintStrong }]}
             activeOpacity={0.82}
-            onPress={() => onNavigate('check-in')}>
+            onPress={() => {
+              select();
+              onNavigate('check-in');
+            }}>
             <View style={[styles.checkInPromptIcon, { backgroundColor: t.brandTint }]}>
               <HugeiconsIcon icon={Calendar03Icon} size={19} color={t.brand} />
             </View>
@@ -346,7 +363,10 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
             <TouchableOpacity
               style={styles.promoButton}
               activeOpacity={0.8}
-              onPress={() => show({ message: 'Discover NearbyPay social transfers & split pay', variant: 'info' })}>
+              onPress={() => {
+                tap();
+                show({ message: 'Discover NearbyPay social transfers & split pay', variant: 'info' });
+              }}>
               <Text style={styles.promoButtonText}>Explore NearbyPay</Text>
               <HugeiconsIcon icon={ArrowRight01Icon} size={12} color="#FFFFFF" />
             </TouchableOpacity>
@@ -356,7 +376,10 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
         <View style={styles.transactionsSection}>
           <View style={styles.transactionsHeader}>
             <Text style={[styles.transactionsTitle, { color: t.textPrimary }]}>Recent Transactions</Text>
-            <TouchableOpacity activeOpacity={0.7} onPress={() => onNavigate('history')}>
+            <TouchableOpacity activeOpacity={0.7} onPress={() => {
+              select();
+              onNavigate('history');
+            }}>
               <Text style={[styles.seeAllText, { color: t.brand }]}>See all</Text>
             </TouchableOpacity>
           </View>
@@ -370,7 +393,10 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
                   index === recentTransactions.length - 1 && styles.lastTransactionItem,
                 ]}
                 activeOpacity={0.7}
-                onPress={() => onNavigate('history', tx.id)}>
+                onPress={() => {
+                  tap();
+                  onNavigate('history', tx.id);
+                }}>
                 <View style={[styles.txIconWrap, { backgroundColor: txTint[tx.type] }]}>
                   <HugeiconsIcon
                     icon={tx.type === 'received' ? ArrowDownToLineIcon : UserIcon}

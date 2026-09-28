@@ -34,6 +34,7 @@ import { useToast } from '@/components/ui/toast';
 import { getAppTheme, GRADIENT_STOPS } from '@/constants/app-theme';
 import { useAppTheme } from '@/hooks/theme-provider';
 import { useTransactions } from '@/hooks/use-transactions';
+import { fail, select, succeed, tap, thud } from '@/lib/haptics';
 import { formatTransactionDate } from '@/lib/welcome-transaction';
 import { captureRef } from 'react-native-view-shot';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -152,6 +153,7 @@ export default function TransactionHistoryScreen({
 
   const handleDownloadReceipt = async () => {
     if (!selectedTx || isSavingReceipt) return;
+    thud();
     setIsSavingReceipt(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -164,6 +166,7 @@ export default function TransactionHistoryScreen({
       const { status } = await MediaLibrary.requestPermissionsAsync();
       if (status === 'granted') {
         await MediaLibrary.Asset.create(uri);
+        succeed();
         show({ message: 'Receipt image saved to your gallery!', variant: 'success' });
       } else if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri, {
@@ -174,6 +177,7 @@ export default function TransactionHistoryScreen({
         show({ message: 'Gallery permission required to save receipts.', variant: 'error' });
       }
     } catch (error) {
+      fail();
       show({
         message: error instanceof Error ? error.message : 'Could not create receipt image.',
         variant: 'error',
@@ -185,6 +189,7 @@ export default function TransactionHistoryScreen({
 
   const handleShareReceipt = async () => {
     if (!selectedTx || isSharingReceipt) return;
+    thud();
     setIsSharingReceipt(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -308,7 +313,10 @@ export default function TransactionHistoryScreen({
                     isActive && styles.chipActive,
                   ]}
                   activeOpacity={0.7}
-                  onPress={() => setFilter(f.id)}>
+                  onPress={() => {
+                    select();
+                    setFilter(f.id);
+                  }}>
                   <Text
                     style={[
                       styles.chipText,
@@ -340,7 +348,10 @@ export default function TransactionHistoryScreen({
                     key={tx.id}
                     style={[styles.txRow, { borderBottomColor: t.cardBorder }]}
                     activeOpacity={0.6}
-                    onPress={() => setSelectedTx(tx)}>
+                    onPress={() => {
+                      tap();
+                      setSelectedTx(tx);
+                    }}>
                     <View
                       style={[
                         styles.txIconWrap,

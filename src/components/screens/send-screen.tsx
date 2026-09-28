@@ -39,6 +39,7 @@ import { PinSheet } from '@/components/ui/pin-sheet';
 import { useToast } from '@/components/ui/toast';
 import { getAppTheme, GRADIENT_STOPS } from '@/constants/app-theme';
 import { useAuth } from '@/hooks/auth-provider';
+import { select, succeed, tap, thud } from '@/lib/haptics';
 import { useAppTheme } from '@/hooks/theme-provider';
 import { useTransactions } from '@/hooks/use-transactions';
 import { useNearbyBluetooth } from '@/hooks/use-nearby-bluetooth';
@@ -351,8 +352,9 @@ export function SendScreen() {
           dateStyle: 'medium',
           timeStyle: 'short',
         }),
-        note: note.trim() || 'NearbyPay Cashtag',
+            note: note.trim() || 'NearbyPay Cashtag',
       });
+      succeed();
     } else {
       if (hasPin) {
         const isValid = await verifyPin(pin);
@@ -380,8 +382,9 @@ export function SendScreen() {
           dateStyle: 'medium',
           timeStyle: 'short',
         }),
-        note: note.trim() || 'Bank Transfer',
+            note: note.trim() || 'Bank Transfer',
       });
+      succeed();
     }
   };
 
@@ -395,6 +398,7 @@ export function SendScreen() {
   };
 
   const copyReceiptRef = async (ref: string) => {
+    tap();
     try {
       await Clipboard.setStringAsync(ref);
     } catch {
@@ -472,7 +476,10 @@ export function SendScreen() {
           <TouchableOpacity
             style={[styles.tabSegment, tab === 'nearby' && styles.tabSegmentActive]}
             activeOpacity={0.85}
-            onPress={() => setTab('nearby')}>
+            onPress={() => {
+              select();
+              setTab('nearby');
+            }}>
             <Text
               style={[
                 styles.tabSegmentText,
@@ -484,7 +491,10 @@ export function SendScreen() {
           <TouchableOpacity
             style={[styles.tabSegment, tab === 'bank' && styles.tabSegmentActive]}
             activeOpacity={0.85}
-            onPress={() => setTab('bank')}>
+            onPress={() => {
+              select();
+              setTab('bank');
+            }}>
             <Text
               style={[
                 styles.tabSegmentText,
@@ -688,6 +698,7 @@ export function SendScreen() {
             <TouchableOpacity
               style={[styles.bankSelector, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}
               onPress={() => {
+                tap();
                 const nextBank = selectedBank ? null : 'Access Bank';
                 setSelectedBank(nextBank);
                 show({
@@ -774,7 +785,10 @@ export function SendScreen() {
                   isSelected && styles.quickChipActive,
                 ]}
                 activeOpacity={0.8}
-                onPress={() => setAmount(item.value)}>
+                onPress={() => {
+                  tap();
+                  setAmount(item.value);
+                }}>
                 <Text
                   style={[
                     styles.quickChipText,
@@ -845,7 +859,10 @@ export function SendScreen() {
           disabled={!hasAmount || isOverBalance}
           accessibilityRole="button"
           accessibilityLabel="Review and send transfer"
-          onPress={handleSendPress}>
+          onPress={() => {
+            thud();
+            handleSendPress();
+          }}>
           <Svg style={StyleSheet.absoluteFill}>
             <Defs>
               <LinearGradient id="sendCtaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -972,6 +989,7 @@ export function SendScreen() {
                   ]}
                   activeOpacity={0.8}
                   onPress={() => {
+                    tap();
                     setSelectedNearbyUser(item);
                     setContactlessCode('');
                     setTab('nearby');

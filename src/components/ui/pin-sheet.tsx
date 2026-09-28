@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '@/components/ui/toast';
 import { getAppTheme } from '@/constants/app-theme';
 import { useAuth } from '@/hooks/auth-provider';
+import { fail, tap } from '@/lib/haptics';
 import { useAppTheme } from '@/hooks/theme-provider';
 
 export type PinSheetMode = 'setup' | 'change' | 'reset' | 'authorize';
@@ -99,6 +100,7 @@ export function PinSheet({
 
     if (activePin.length >= 4) return;
 
+    tap();
     const nextPin = activePin + digit;
 
     if (mode === 'authorize') {
@@ -116,6 +118,7 @@ export function PinSheet({
           resetAll();
           onSuccess();
         } catch (e: any) {
+          fail();
           setErrorMessage(e.message || 'Incorrect PIN');
           setCurrentPin('');
         } finally {

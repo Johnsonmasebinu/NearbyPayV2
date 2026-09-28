@@ -4,11 +4,11 @@
     "slug": "NearbyPay",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo/logo_bg.png",
+    "icon": "./assets/images/logo/icon-1024.png",
     "scheme": "nearbypay",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/images/logo/icon-1024.png",
       "infoPlist": {
         "NSBluetoothAlwaysUsageDescription": "NearbyPay uses Bluetooth to discover nearby receivers when you enable Nearby Discovery."
       },
@@ -16,10 +16,9 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#380493",
+        "foregroundImage": "./assets/images/logo/adaptive-foreground.png",
+        "monochromeImage": "./assets/images/logo/adaptive-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "pan",
@@ -40,7 +39,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#380493",
           "image": "./assets/images/logo/logo_bg.png",
           "imageWidth": 76
         }

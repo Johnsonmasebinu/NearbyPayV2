@@ -4,10 +4,9 @@ import {
   BubbleChatIcon,
   CheckmarkBadge01Icon,
   Copy01Icon,
-  Link01Icon,
+  Download01Icon,
   LockPasswordIcon,
   MoreHorizontalIcon,
-  Share08Icon,
   ShieldCheckIcon,
   ShieldKeyIcon,
   TelegramIcon,
@@ -15,19 +14,21 @@ import {
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as Clipboard from 'expo-clipboard';
+import * as MediaLibrary from 'expo-media-library';
+import * as Sharing from 'expo-sharing';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
   Platform,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { captureRef } from 'react-native-view-shot';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 import { ContactlessCodeSheet } from '@/components/ui/contactless-code-sheet';
@@ -35,6 +36,7 @@ import QRCodeView from '@/components/ui/qr-code';
 import { useToast } from '@/components/ui/toast';
 import { getAppTheme, GRADIENT_STOPS } from '@/constants/app-theme';
 import { useAuth } from '@/hooks/auth-provider';
+import { succeed, tap, thud } from '@/lib/haptics';
 import { useAppTheme } from '@/hooks/theme-provider';
 import { useUserProfile } from '@/hooks/user-profile-provider';
 import { createReceiveQrPayload } from '@/lib/receive-qr';
@@ -50,7 +52,9 @@ export function ReceiveScreen() {
 
   const cleanTag = (profile.tag || 'user').trim().replace(/^[@$]/, '');
   const [receiveQr, setReceiveQr] = useState<{ tag: string; payload: string } | null>(null);
-  const receiveLink = `https://nearbypay.me/@${cleanTag}`;
+  const [isSavingQr, setIsSavingQr] = useState(false);
+  const qrShotRef = useRef<View>(null);
+  const isQrReady = hasContactlessCode && receiveQr?.tag === cleanTag;
 
   useEffect(() => {
     let isActive = true;
@@ -63,6 +67,7 @@ export function ReceiveScreen() {
   }, [cleanTag]);
 
   const copyToClipboard = async (text: string, label: string) => {
+    tap();
     try {
       await Clipboard.setStringAsync(text);
     } catch {
@@ -73,15 +78,34 @@ export function ReceiveScreen() {
     show({ message: `${label} copied to clipboard!`, variant: 'success' });
   };
 
-  const handleShare = async () => {
+  const handleDownloadQr = async () => {
+    if (isSavingQr || !isQrReady) return;
+    thud();
+    setIsSavingQr(true);
     try {
-      await Share.share({
-        message: `Send me money instantly on NearbyPay with my Cashtag @${cleanTag} or link: ${receiveLink}`,
-        url: receiveLink,
-        title: `Pay @${cleanTag} on NearbyPay`,
+      const uri = await captureRef(qrShotRef, {
+        format: 'png',
+        quality: 1,
+        result: 'tmpfile',
       });
+
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status === 'granted') {
+        await MediaLibrary.Asset.create(uri);
+        succeed();
+        show({ message: 'QR code saved to your gallery!', variant: 'success' });
+      } else if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'image/png',
+          dialogTitle: 'Share NearbyPay QR code',
+        });
+      } else {
+        show({ message: 'Allow gallery access to save the QR code.', variant: 'error' });
+      }
     } catch {
-      show({ message: 'Unable to open share dialog', variant: 'error' });
+      show({ message: 'Could not save QR code image.', variant: 'error' });
+    } finally {
+      setIsSavingQr(false);
     }
   };
 
@@ -147,7 +171,7 @@ export function ReceiveScreen() {
           {/* QR Code Container */}
           <View style={[styles.qrContainer, !hasContactlessCode && styles.qrContainerSetup]}>
             {hasContactlessCode && receiveQr?.tag === cleanTag ? (
-              <View style={styles.qrSquare}>
+              <View ref={qrShotRef} collapsable={false} style={styles.qrSquare}>
                 <QRCodeView value={receiveQr.payload} size={170} color="#0F172A" />
               </View>
             ) : hasContactlessCode ? (
@@ -211,18 +235,26 @@ export function ReceiveScreen() {
               <Text style={styles.cardActionTextPrimary}>Copy Cashtag</Text>
             </TouchableOpacity>
 
+            {/* Solid white so it stays visible on the blue gradient in both themes */}
             <TouchableOpacity
-              style={styles.cardActionBtn}
+              style={[styles.cardActionBtnPrimary, (isSavingQr || !isQrReady) && { opacity: 0.7 }]}
               activeOpacity={0.85}
-              onPress={handleShare}>
-              <HugeiconsIcon icon={Share08Icon} size={16} color="#FFFFFF" />
-              <Text style={styles.cardActionText}>Share</Text>
+              disabled={isSavingQr || !isQrReady}
+              onPress={handleDownloadQr}>
+              {isSavingQr ? (
+                <ActivityIndicator size="small" color="#101A5A" />
+              ) : (
+                <>
+                  <HugeiconsIcon icon={Download01Icon} size={16} color="#101A5A" />
+                  <Text style={styles.cardActionTextPrimary}>Download QR</Text>
+                </>
+              )}
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Your Link Section */}
-        <Text style={[styles.sectionLabel, { color: t.textPrimary }]}>Your Cashtag Link</Text>
+        {/* <Text style={[styles.sectionLabel, { color: t.textPrimary }]}>Your Cashtag Link</Text>
         <View style={[styles.linkBox, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
           <HugeiconsIcon icon={Link01Icon} size={18} color={t.brand} />
           <Text style={[styles.linkText, { color: t.textPrimary, fontFamily: 'Montserrat_600SemiBold' }]} numberOfLines={1}>
@@ -236,7 +268,7 @@ export function ReceiveScreen() {
             onPress={() => copyToClipboard(receiveLink, 'Cashtag link')}>
             <HugeiconsIcon icon={Copy01Icon} size={18} color={t.textPrimary} />
           </TouchableOpacity>
-        </View>
+        </View> */}
 
         {/* Quick Share Section */}
         <Text style={[styles.sectionLabel, { color: t.textPrimary }]}>Quick Share</Text>
@@ -571,18 +603,6 @@ const styles = StyleSheet.create({
     marginTop: 20,
     width: '100%',
   },
-  cardActionBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.35)',
-    borderRadius: 14,
-    paddingVertical: 12,
-    gap: 8,
-  },
   cardActionBtnPrimary: {
     flex: 1,
     flexDirection: 'row',
@@ -597,11 +617,6 @@ const styles = StyleSheet.create({
       android: { elevation: 3 },
       web: { shadowColor: '#0A1240', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.18, shadowRadius: 6 },
     }),
-  },
-  cardActionText: {
-    fontFamily: 'Montserrat_600SemiBold',
-    fontSize: 13,
-    color: '#FFFFFF',
   },
   cardActionTextPrimary: {
     fontFamily: 'Montserrat_600SemiBold',

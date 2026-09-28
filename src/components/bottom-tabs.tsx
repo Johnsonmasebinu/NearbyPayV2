@@ -12,6 +12,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { getAppTheme, GRADIENT_STOPS } from '@/constants/app-theme';
 import { useAppTheme } from '@/hooks/theme-provider';
+import { select, thud } from '@/lib/haptics';
 
 export type MainTabKey = 'home' | 'receive' | 'send' | 'history' | 'profile';
 
@@ -42,7 +43,10 @@ export function BottomTabs({ active, onPress }: BottomTabsProps) {
         key={id}
         style={styles.navItem}
         activeOpacity={0.7}
-        onPress={() => onPress(id)}
+        onPress={() => {
+          select();
+          onPress(id);
+        }}
         accessibilityRole="tab"
         accessibilityState={{ selected: isActive }}
         accessibilityLabel={label}>
@@ -80,7 +84,10 @@ export function BottomTabs({ active, onPress }: BottomTabsProps) {
       <TouchableOpacity
         style={[styles.fab, { borderColor: t.pageBg }]}
         activeOpacity={0.85}
-        onPress={() => onPress('send')}
+        onPress={() => {
+          thud();
+          onPress('send');
+        }}
         accessibilityRole="tab"
         accessibilityState={{ selected: active === 'send' }}
         accessibilityLabel="Send">

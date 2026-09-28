@@ -57,6 +57,7 @@ import { useTransactions } from '@/hooks/use-transactions';
 import { useUserProfile } from '@/hooks/user-profile-provider';
 import { createReceiveQrPayload } from '@/lib/receive-qr';
 import { useNearbyBluetooth } from '@/hooks/use-nearby-bluetooth';
+import { select, tap } from '@/lib/haptics';
 
 export function ProfileScreen() {
   const router = useRouter();
@@ -358,7 +359,10 @@ export function ProfileScreen() {
                       isActive && [styles.segmentItemActive, { backgroundColor: t.brand }],
                     ]}
                     activeOpacity={0.8}
-                    onPress={() => setMode(opt.value)}>
+                    onPress={() => {
+                      select();
+                      setMode(opt.value);
+                    }}>
                     <HugeiconsIcon
                       icon={opt.icon}
                       size={14}
@@ -404,6 +408,7 @@ export function ProfileScreen() {
               value={nearbyBluetooth.isAdvertising}
               disabled={!nearbyBluetooth.bluetoothAvailable || !hasContactlessCode}
               onValueChange={(enabled) => {
+                tap();
                 const action = enabled
                   ? nearbyBluetooth.enableAdvertising()
                   : nearbyBluetooth.disableAdvertising();
@@ -463,7 +468,10 @@ export function ProfileScreen() {
             </View>
             <Switch
               value={biometricsEnabled}
-              onValueChange={setBiometricsEnabled}
+              onValueChange={(value) => {
+                tap();
+                setBiometricsEnabled(value);
+              }}
               trackColor={{ false: t.chipBg, true: t.brand }}
               thumbColor="#FFFFFF"
             />
@@ -529,7 +537,10 @@ export function ProfileScreen() {
             </View>
             <Switch
               value={pushNotifications}
-              onValueChange={setPushNotifications}
+              onValueChange={(value) => {
+                tap();
+                setPushNotifications(value);
+              }}
               trackColor={{ false: t.chipBg, true: t.brand }}
               thumbColor="#FFFFFF"
             />
@@ -550,7 +561,10 @@ export function ProfileScreen() {
             </View>
             <Switch
               value={hapticsEnabled}
-              onValueChange={setHapticsEnabled}
+              onValueChange={(value) => {
+                tap();
+                setHapticsEnabled(value);
+              }}
               trackColor={{ false: t.chipBg, true: t.brand }}
               thumbColor="#FFFFFF"
             />
