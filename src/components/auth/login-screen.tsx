@@ -1,4 +1,4 @@
-import { LockPasswordIcon, Mail01Icon, ViewIcon, ViewOffSlashIcon } from '@hugeicons/core-free-icons';
+import { LockPasswordIcon, Mail01Icon, ViewIcon, ViewOffSlashIcon } from '@/lib/icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useState } from 'react';
 import {
@@ -102,8 +102,8 @@ export function LoginScreen({ onLogin, onGoToSignup, onForgotPassword }: LoginSc
                     />
                   </View>
                   <View style={styles.brandTextCol}>
-                    <Text style={[styles.brandName, { color: textPrimary }]}>NearbyPay</Text>
-                    <Text style={[styles.brandTag, { color: textSecondary }]}>Send. Receive. Stay Close.</Text>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.brandName, { color: textPrimary }]}>NearbyPay</Text>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.brandTag, { color: textSecondary }]}>Send. Receive. Stay Close.</Text>
                   </View>
                 </View>
 
@@ -111,12 +111,12 @@ export function LoginScreen({ onLogin, onGoToSignup, onForgotPassword }: LoginSc
                   <ThemedText style={[styles.title, { color: textPrimary }]}>
                     Welcome back
                   </ThemedText>
-                  <Text style={[styles.subtitle, { color: textSecondary }]}>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.subtitle, { color: textSecondary }]}>
                     Sign in to manage your wallet and quick transfers.
                   </Text>
 
                   <View style={styles.fieldGroup}>
-                    <Text style={[styles.label, { color: textPrimary }]}>Email</Text>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.label, { color: textPrimary }]}>Email</Text>
                     <View
                       style={[
                         styles.inputWrap,
@@ -126,7 +126,7 @@ export function LoginScreen({ onLogin, onGoToSignup, onForgotPassword }: LoginSc
                         },
                       ]}>
                       <HugeiconsIcon icon={Mail01Icon} size={18} color={iconColor} strokeWidth={1.8} />
-                      <TextInput
+                      <TextInput maxFontSizeMultiplier={1.3}
                         value={email}
                         onChangeText={setEmail}
                         placeholder="name@email.com"
@@ -146,9 +146,9 @@ export function LoginScreen({ onLogin, onGoToSignup, onForgotPassword }: LoginSc
 
                   <View style={styles.fieldGroup}>
                     <View style={styles.labelRow}>
-                      <Text style={[styles.label, { color: textPrimary }]}>Password</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.label, { color: textPrimary }]}>Password</Text>
                       <TouchableOpacity onPress={onForgotPassword} hitSlop={8}>
-                        <Text style={styles.inlineLink}>Forgot?</Text>
+                        <Text maxFontSizeMultiplier={1.3} style={styles.inlineLink}>Forgot?</Text>
                       </TouchableOpacity>
                     </View>
                     <View
@@ -160,7 +160,7 @@ export function LoginScreen({ onLogin, onGoToSignup, onForgotPassword }: LoginSc
                         },
                       ]}>
                       <HugeiconsIcon icon={LockPasswordIcon} size={18} color={iconColor} strokeWidth={1.8} />
-                      <TextInput
+                      <TextInput maxFontSizeMultiplier={1.3}
                         value={password}
                         onChangeText={setPassword}
                         placeholder="Enter your password"
@@ -196,20 +196,20 @@ export function LoginScreen({ onLogin, onGoToSignup, onForgotPassword }: LoginSc
                     {isSubmitting ? (
                       <ActivityIndicator size="small" color="#FFFFFF" />
                     ) : (
-                      <Text style={styles.primaryButtonText}>Log In</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={styles.primaryButtonText}>Log In</Text>
                     )}
                   </TouchableOpacity>
 
                   <View style={styles.dividerRow}>
                     <View style={[styles.dividerLine, { backgroundColor: cardBorder }]} />
-                    <Text style={[styles.dividerText, { color: textSecondary }]}>secure login</Text>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.dividerText, { color: textSecondary }]}>secure login</Text>
                     <View style={[styles.dividerLine, { backgroundColor: cardBorder }]} />
                   </View>
 
                   <View style={styles.footerRow}>
-                    <Text style={[styles.footerText, { color: textSecondary }]}>New here?</Text>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.footerText, { color: textSecondary }]}>New here?</Text>
                     <TouchableOpacity onPress={onGoToSignup} hitSlop={8}>
-                      <Text style={styles.linkText}>Create account</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={styles.linkText}>Create account</Text>
                     </TouchableOpacity>
                   </View>
                 </View>

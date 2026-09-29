@@ -9,7 +9,7 @@ import {
   Share01Icon,
   Tick02Icon,
   UserIcon,
-} from '@hugeicons/core-free-icons';
+} from '@/lib/icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { Image } from 'expo-image';
 import * as MediaLibrary from 'expo-media-library';
@@ -230,7 +230,7 @@ export default function TransactionHistoryScreen({
             onPress={onBack}>
             <HugeiconsIcon icon={ArrowLeft01Icon} size={18} color={t.textPrimary} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: t.textPrimary }]}>Transaction History</Text>
+          <Text maxFontSizeMultiplier={1.3} style={[styles.headerTitle, { color: t.textPrimary }]}>Transaction History</Text>
           <View style={styles.headerSpacer} />
         </View>
 
@@ -262,13 +262,13 @@ export default function TransactionHistoryScreen({
 
             <View style={styles.summaryRow}>
               <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Money in</Text>
-                <Text style={styles.summaryValue}>+₦{totalIn.toLocaleString()}</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.summaryLabel}>Money in</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.summaryValue}>+₦{totalIn.toLocaleString()}</Text>
               </View>
               <View style={styles.summaryDivider} />
               <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Money out</Text>
-                <Text style={styles.summaryValue}>-₦{totalOut.toLocaleString()}</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.summaryLabel}>Money out</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.summaryValue}>-₦{totalOut.toLocaleString()}</Text>
               </View>
             </View>
           </View>
@@ -277,7 +277,7 @@ export default function TransactionHistoryScreen({
           <View style={styles.searchRow}>
             <View style={[styles.searchBox, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
               <HugeiconsIcon icon={Search01Icon} size={15} color={t.iconColor} />
-              <TextInput
+              <TextInput maxFontSizeMultiplier={1.3}
                 style={[styles.searchInput, { color: t.textPrimary }]}
                 placeholder="Search transactions"
                 placeholderTextColor={t.muted}
@@ -317,7 +317,7 @@ export default function TransactionHistoryScreen({
                     select();
                     setFilter(f.id);
                   }}>
-                  <Text
+                  <Text maxFontSizeMultiplier={1.3}
                     style={[
                       styles.chipText,
                       { color: t.textSecondary },
@@ -336,13 +336,13 @@ export default function TransactionHistoryScreen({
               <View style={[styles.emptyIconWrap, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
                 <HugeiconsIcon icon={Calendar03Icon} size={22} color={t.muted} />
               </View>
-              <Text style={[styles.emptyTitle, { color: t.textPrimary }]}>No transactions found</Text>
-              <Text style={[styles.emptySubtitle, { color: t.textSecondary }]}>Try a different search or filter</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.emptyTitle, { color: t.textPrimary }]}>No transactions found</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.emptySubtitle, { color: t.textSecondary }]}>Try a different search or filter</Text>
             </View>
           ) : (
             groups.map(([day, txs]) => (
               <View key={day} style={styles.daySection}>
-                <Text style={[styles.dayLabel, { color: t.textSecondary }]}>{day}</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.dayLabel, { color: t.textSecondary }]}>{day}</Text>
                 {txs.map((tx) => (
                   <TouchableOpacity
                     key={tx.id}
@@ -361,17 +361,17 @@ export default function TransactionHistoryScreen({
                     </View>
 
                     <View style={styles.txInfo}>
-                      <Text style={[styles.txTitle, { color: t.textPrimary }]}>{tx.title}</Text>
-                      <Text style={[styles.txMeta, { color: t.textSecondary }]}>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.txTitle, { color: t.textPrimary }]}>{tx.title}</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.txMeta, { color: t.textSecondary }]}>
                         {tx.category} · {tx.date}
                       </Text>
                     </View>
 
                     <View style={styles.txRight}>
-                      <Text style={[styles.txAmount, { color: tx.amountColor }]}>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.txAmount, { color: tx.amountColor }]}>
                         {tx.amount}
                       </Text>
-                      <Text
+                      <Text maxFontSizeMultiplier={1.3}
                         style={[
                           styles.txStatus,
                           tx.status === 'Pending' ? styles.txStatusPending : styles.txStatusDone,
@@ -400,7 +400,7 @@ export default function TransactionHistoryScreen({
               <View style={[styles.sheetHandle, { backgroundColor: t.cardBorder }]} />
 
               <View style={styles.sheetTopRow}>
-                <Text style={[styles.sheetTopTitle, { color: t.textPrimary }]}>Transaction Receipt</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.sheetTopTitle, { color: t.textPrimary }]}>Transaction Receipt</Text>
                 <TouchableOpacity
                   style={[styles.sheetClose, { backgroundColor: t.pageBg }]}
                   activeOpacity={0.7}
@@ -429,16 +429,16 @@ export default function TransactionHistoryScreen({
                       style={styles.receiptLogo}
                       contentFit="contain"
                     />
-                    <Text style={[styles.receiptBrand, { color: t.brand }]}>NearbyPay</Text>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.receiptBrand, { color: t.brand }]}>NearbyPay</Text>
                     <View style={[styles.receiptPill, { backgroundColor: t.brandTint }]}>
-                      <Text style={[styles.receiptType, { color: t.brand }]}>OFFICIAL PAYMENT RECEIPT</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.receiptType, { color: t.brand }]}>OFFICIAL PAYMENT RECEIPT</Text>
                     </View>
                   </View>
 
                   {/* Amount & Status Badge */}
                   <View style={styles.receiptAmountBox}>
-                    <Text style={[styles.receiptAmountLabel, { color: t.textSecondary }]}>Amount Transferred</Text>
-                    <Text style={[styles.receiptAmount, { color: selectedTx.amountColor }]}>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.receiptAmountLabel, { color: t.textSecondary }]}>Amount Transferred</Text>
+                    <Text maxFontSizeMultiplier={1.3} adjustsFontSizeToFit numberOfLines={1} style={[styles.receiptAmount, { color: selectedTx.amountColor }]}>
                       {selectedTx.amount}
                     </Text>
                     <View
@@ -456,7 +456,7 @@ export default function TransactionHistoryScreen({
                         size={12}
                         color={selectedTx.status === 'Completed' ? '#16A34A' : '#D97706'}
                       />
-                      <Text
+                      <Text maxFontSizeMultiplier={1.3}
                         style={[
                           styles.receiptStatusText,
                           { color: selectedTx.status === 'Completed' ? '#16A34A' : '#D97706' },
@@ -476,15 +476,15 @@ export default function TransactionHistoryScreen({
                       },
                     ]}>
                     <View style={[styles.sheetDetailRow, { borderBottomColor: isDark ? '#1E293B' : '#E2E8F0' }]}>
-                      <Text style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Transaction Type</Text>
-                      <Text style={[styles.sheetDetailValue, { color: t.textPrimary }]}>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Transaction Type</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.sheetDetailValue, { color: t.textPrimary }]}>
                         {selectedTx.type === 'received' ? 'Money In (Credit)' : 'Money Out (Debit)'}
                       </Text>
                     </View>
 
                     <View style={[styles.sheetDetailRow, { borderBottomColor: isDark ? '#1E293B' : '#E2E8F0' }]}>
-                      <Text style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Title</Text>
-                      <Text
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Title</Text>
+                      <Text maxFontSizeMultiplier={1.3}
                         style={[styles.sheetDetailValue, { color: t.textPrimary, flex: 1, textAlign: 'right' }]}
                         numberOfLines={2}>
                         {selectedTx.title}
@@ -492,8 +492,8 @@ export default function TransactionHistoryScreen({
                     </View>
 
                     <View style={[styles.sheetDetailRow, { borderBottomColor: isDark ? '#1E293B' : '#E2E8F0' }]}>
-                      <Text style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Description</Text>
-                      <Text
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Description</Text>
+                      <Text maxFontSizeMultiplier={1.3}
                         style={[styles.sheetDetailValue, { color: t.textPrimary, flex: 1, textAlign: 'right' }]}
                         numberOfLines={2}>
                         {selectedTx.description || selectedTx.title}
@@ -501,18 +501,18 @@ export default function TransactionHistoryScreen({
                     </View>
 
                     <View style={[styles.sheetDetailRow, { borderBottomColor: isDark ? '#1E293B' : '#E2E8F0' }]}>
-                      <Text style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Payment Channel</Text>
-                      <Text style={[styles.sheetDetailValue, { color: t.textPrimary }]}>{selectedTx.channel}</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Payment Channel</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.sheetDetailValue, { color: t.textPrimary }]}>{selectedTx.channel}</Text>
                     </View>
 
                     <View style={[styles.sheetDetailRow, { borderBottomColor: isDark ? '#1E293B' : '#E2E8F0' }]}>
-                      <Text style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Date & Time</Text>
-                      <Text style={[styles.sheetDetailValue, { color: t.textPrimary }]}>{selectedTx.date}</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Date & Time</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.sheetDetailValue, { color: t.textPrimary }]}>{selectedTx.date}</Text>
                     </View>
 
                     <View style={[styles.sheetDetailRow, styles.sheetDetailRowLast]}>
-                      <Text style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Reference No.</Text>
-                      <Text
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.sheetDetailLabel, { color: t.textSecondary }]}>Reference No.</Text>
+                      <Text maxFontSizeMultiplier={1.3}
                         style={[
                           styles.sheetDetailValue,
                           { color: t.textPrimary, fontFamily: 'Montserrat_700Bold', fontSize: 10.5 },
@@ -525,7 +525,7 @@ export default function TransactionHistoryScreen({
                   {/* Security Footer Seal */}
                   <View style={styles.receiptSecurityFooter}>
                     <HugeiconsIcon icon={Tick02Icon} size={11} color={t.muted} />
-                    <Text style={[styles.receiptSecurityText, { color: t.muted }]}>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.receiptSecurityText, { color: t.muted }]}>
                       Verified by NearbyPay • Instant Settlement
                     </Text>
                   </View>
@@ -543,7 +543,7 @@ export default function TransactionHistoryScreen({
                     ) : (
                       <>
                         <HugeiconsIcon icon={Download01Icon} size={16} color="#FFFFFF" />
-                        <Text style={styles.receiptActionText}>Download Image</Text>
+                        <Text maxFontSizeMultiplier={1.3} style={styles.receiptActionText}>Download Image</Text>
                       </>
                     )}
                   </TouchableOpacity>
@@ -562,7 +562,7 @@ export default function TransactionHistoryScreen({
                     ) : (
                       <>
                         <HugeiconsIcon icon={Share01Icon} size={16} color={t.textPrimary} />
-                        <Text style={[styles.receiptActionText, { color: t.textPrimary }]}>Share</Text>
+                        <Text maxFontSizeMultiplier={1.3} style={[styles.receiptActionText, { color: t.textPrimary }]}>Share</Text>
                       </>
                     )}
                   </TouchableOpacity>

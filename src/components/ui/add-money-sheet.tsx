@@ -9,7 +9,7 @@ import {
   FlashIcon,
   InformationCircleIcon,
   Share08Icon,
-} from '@hugeicons/core-free-icons';
+} from '@/lib/icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useState } from 'react';
@@ -184,8 +184,8 @@ export function AddMoneySheet({ visible, onClose, onSuccess }: AddMoneySheetProp
               <HugeiconsIcon icon={ArrowDown01Icon} size={22} color={t.brand} strokeWidth={2.4} />
             </View>
             <View style={styles.headerText}>
-              <Text style={[styles.title, { color: t.textPrimary }]}>Add Money</Text>
-              <Text style={[styles.subtitle, { color: t.textSecondary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.title, { color: t.textPrimary }]}>Add Money</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.subtitle, { color: t.textSecondary }]}>
                 Fund your live NearbyPay balance
               </Text>
             </View>
@@ -204,26 +204,26 @@ export function AddMoneySheet({ visible, onClose, onSuccess }: AddMoneySheetProp
               <View style={[styles.successIconWrap, { backgroundColor: t.successTint }]}>
                 <HugeiconsIcon icon={CheckmarkCircle02Icon} size={46} color={t.success} strokeWidth={2.4} />
               </View>
-              <Text style={[styles.successTitle, { color: t.textPrimary }]}>Deposit Confirmed!</Text>
-              <Text style={[styles.successAmount, { color: t.success }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.successTitle, { color: t.textPrimary }]}>Deposit Confirmed!</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.successAmount, { color: t.success }]}>
                 +₦{successData.amount.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Text>
-              <Text style={[styles.successSubtitle, { color: t.textSecondary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.successSubtitle, { color: t.textSecondary }]}>
                 Funds have been credited directly to your live Supabase wallet balance.
               </Text>
 
               <View style={[styles.successReceiptCard, { backgroundColor: t.inputBg, borderColor: t.inputBorder }]}>
                 <View style={styles.receiptLine}>
-                  <Text style={[styles.receiptLabel, { color: t.muted }]}>Channel</Text>
-                  <Text style={[styles.receiptVal, { color: t.textPrimary }]}>{selectedChannel}</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.receiptLabel, { color: t.muted }]}>Channel</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.receiptVal, { color: t.textPrimary }]}>{selectedChannel}</Text>
                 </View>
                 <View style={styles.receiptLine}>
-                  <Text style={[styles.receiptLabel, { color: t.muted }]}>Reference</Text>
-                  <Text style={[styles.receiptVal, { color: t.textPrimary }]}>{successData.reference}</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.receiptLabel, { color: t.muted }]}>Reference</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.receiptVal, { color: t.textPrimary }]}>{successData.reference}</Text>
                 </View>
                 <View style={styles.receiptLine}>
-                  <Text style={[styles.receiptLabel, { color: t.muted }]}>Updated Balance</Text>
-                  <Text style={[styles.receiptVal, { color: t.brand, fontFamily: 'Montserrat_700Bold' }]}>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.receiptLabel, { color: t.muted }]}>Updated Balance</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.receiptVal, { color: t.brand, fontFamily: 'Montserrat_700Bold' }]}>
                     ₦{successData.newBalance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </Text>
                 </View>
@@ -233,7 +233,7 @@ export function AddMoneySheet({ visible, onClose, onSuccess }: AddMoneySheetProp
                 style={[styles.primaryActionBtn, { backgroundColor: t.brand }]}
                 activeOpacity={0.85}
                 onPress={handleClose}>
-                <Text style={styles.primaryActionBtnText}>Done</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.primaryActionBtnText}>Done</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -250,7 +250,7 @@ export function AddMoneySheet({ visible, onClose, onSuccess }: AddMoneySheetProp
                     color={activeTab === 'transfer' ? t.brand : t.muted}
                     strokeWidth={2.2}
                   />
-                  <Text
+                  <Text maxFontSizeMultiplier={1.3}
                     style={[
                       styles.tabSegmentText,
                       { color: activeTab === 'transfer' ? t.textPrimary : t.muted },
@@ -269,7 +269,7 @@ export function AddMoneySheet({ visible, onClose, onSuccess }: AddMoneySheetProp
                     color={activeTab === 'topup' ? t.brand : t.muted}
                     strokeWidth={2.2}
                   />
-                  <Text
+                  <Text maxFontSizeMultiplier={1.3}
                     style={[
                       styles.tabSegmentText,
                       { color: activeTab === 'topup' ? t.textPrimary : t.muted },
@@ -284,7 +284,7 @@ export function AddMoneySheet({ visible, onClose, onSuccess }: AddMoneySheetProp
                 <View style={styles.tabContent}>
                   <View style={[styles.infoBanner, { backgroundColor: t.brandTint, borderColor: t.brandTintStrong }]}>
                     <HugeiconsIcon icon={InformationCircleIcon} size={18} color={t.brand} strokeWidth={2.2} />
-                    <Text style={[styles.infoBannerText, { color: t.textSecondary }]}>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.infoBannerText, { color: t.textSecondary }]}>
                       Transfer money to your dedicated NearbyPay account from any bank app. Your balance updates automatically.
                     </Text>
                   </View>
@@ -292,19 +292,19 @@ export function AddMoneySheet({ visible, onClose, onSuccess }: AddMoneySheetProp
                   <View style={[styles.accountCard, { backgroundColor: t.inputBg, borderColor: t.inputBorder }]}>
                     <View style={styles.accountCardTop}>
                       <View>
-                        <Text style={[styles.accountDetailLabel, { color: t.muted }]}>BANK NAME</Text>
-                        <Text style={[styles.accountDetailValue, { color: t.textPrimary }]}>{bankName}</Text>
+                        <Text maxFontSizeMultiplier={1.3} style={[styles.accountDetailLabel, { color: t.muted }]}>BANK NAME</Text>
+                        <Text maxFontSizeMultiplier={1.3} style={[styles.accountDetailValue, { color: t.textPrimary }]}>{bankName}</Text>
                       </View>
                       <View style={[styles.liveStatusBadge, { backgroundColor: t.successTint }]}>
                         <HugeiconsIcon icon={CheckmarkBadge01Icon} size={12} color={t.success} strokeWidth={2.4} />
-                        <Text style={[styles.liveStatusText, { color: t.success }]}>Active Nuban</Text>
+                        <Text maxFontSizeMultiplier={1.3} style={[styles.liveStatusText, { color: t.success }]}>Active Nuban</Text>
                       </View>
                     </View>
 
                     <View style={styles.accountNumberRow}>
                       <View style={styles.accountNumberBlock}>
-                        <Text style={[styles.accountDetailLabel, { color: t.muted }]}>ACCOUNT NUMBER</Text>
-                        <Text style={[styles.accountNumberBig, { color: t.textPrimary }]}>{formattedAccount}</Text>
+                        <Text maxFontSizeMultiplier={1.3} style={[styles.accountDetailLabel, { color: t.muted }]}>ACCOUNT NUMBER</Text>
+                        <Text maxFontSizeMultiplier={1.3} style={[styles.accountNumberBig, { color: t.textPrimary }]}>{formattedAccount}</Text>
                       </View>
 
                       <TouchableOpacity
@@ -312,13 +312,13 @@ export function AddMoneySheet({ visible, onClose, onSuccess }: AddMoneySheetProp
                         activeOpacity={0.85}
                         onPress={copyAccountNumber}>
                         <HugeiconsIcon icon={Copy01Icon} size={15} color="#FFFFFF" strokeWidth={2.2} />
-                        <Text style={styles.copyBtnText}>Copy</Text>
+                        <Text maxFontSizeMultiplier={1.3} style={styles.copyBtnText}>Copy</Text>
                       </TouchableOpacity>
                     </View>
 
                     <View style={styles.accountHolderBlock}>
-                      <Text style={[styles.accountDetailLabel, { color: t.muted }]}>ACCOUNT NAME</Text>
-                      <Text style={[styles.accountHolderName, { color: t.textPrimary }]}>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.accountDetailLabel, { color: t.muted }]}>ACCOUNT NAME</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.accountHolderName, { color: t.textPrimary }]}>
                         {profile.name.toUpperCase()} / NEARBYPAY
                       </Text>
                     </View>
@@ -330,7 +330,7 @@ export function AddMoneySheet({ visible, onClose, onSuccess }: AddMoneySheetProp
                       activeOpacity={0.8}
                       onPress={handleShareDetails}>
                       <HugeiconsIcon icon={Share08Icon} size={16} color={t.textPrimary} strokeWidth={2.2} />
-                      <Text style={[styles.secondaryActionBtnText, { color: t.textPrimary }]}>Share Details</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.secondaryActionBtnText, { color: t.textPrimary }]}>Share Details</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -338,18 +338,18 @@ export function AddMoneySheet({ visible, onClose, onSuccess }: AddMoneySheetProp
                       activeOpacity={0.85}
                       onPress={() => setActiveTab('topup')}>
                       <HugeiconsIcon icon={FlashIcon} size={16} color="#FFFFFF" strokeWidth={2.2} />
-                      <Text style={styles.primaryActionBtnText}>Instant Top-Up</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={styles.primaryActionBtnText}>Instant Top-Up</Text>
                     </TouchableOpacity>
                   </View>
 
-                  <Text style={[styles.footnoteText, { color: t.muted }]}>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.footnoteText, { color: t.muted }]}>
                     Zero transaction fee • Instant settlement • Real-time Supabase sync
                   </Text>
                 </View>
               ) : (
                 /* ─── TAB 2: INSTANT TOP-UP ───────────────────── */
                 <View style={styles.tabContent}>
-                  <Text style={[styles.sectionHeading, { color: t.textPrimary }]}>Select Top-Up Amount</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.sectionHeading, { color: t.textPrimary }]}>Select Top-Up Amount</Text>
 
                   {/* Preset Amount Pills */}
                   <View style={styles.presetAmountsGrid}>
@@ -367,7 +367,7 @@ export function AddMoneySheet({ visible, onClose, onSuccess }: AddMoneySheetProp
                           ]}
                           activeOpacity={0.8}
                           onPress={() => handlePresetSelect(amt)}>
-                          <Text
+                          <Text maxFontSizeMultiplier={1.3}
                             style={[
                               styles.presetChipText,
                               { color: isSelected ? '#FFFFFF' : t.textPrimary },
@@ -380,10 +380,10 @@ export function AddMoneySheet({ visible, onClose, onSuccess }: AddMoneySheetProp
                   </View>
 
                   {/* Custom Amount Input */}
-                  <Text style={[styles.inputLabel, { color: t.textSecondary }]}>Or enter custom amount (₦)</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.inputLabel, { color: t.textSecondary }]}>Or enter custom amount (₦)</Text>
                   <View style={[styles.amountInputContainer, { backgroundColor: t.inputBg, borderColor: t.inputBorder }]}>
-                    <Text style={[styles.currencyPrefix, { color: t.brand }]}>₦</Text>
-                    <TextInput
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.currencyPrefix, { color: t.brand }]}>₦</Text>
+                    <TextInput maxFontSizeMultiplier={1.3}
                       style={[styles.amountTextInput, { color: t.textPrimary }]}
                       keyboardType="number-pad"
                       value={customAmount}
@@ -395,7 +395,7 @@ export function AddMoneySheet({ visible, onClose, onSuccess }: AddMoneySheetProp
                   </View>
 
                   {/* Channel Selection */}
-                  <Text style={[styles.inputLabel, { color: t.textSecondary }]}>Payment Channel</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.inputLabel, { color: t.textSecondary }]}>Payment Channel</Text>
                   <View style={styles.channelRow}>
                     {(['Bank Transfer', 'Debit Card', 'USSD'] as const).map((channel) => {
                       const isSelected = selectedChannel === channel;
@@ -417,7 +417,7 @@ export function AddMoneySheet({ visible, onClose, onSuccess }: AddMoneySheetProp
                             color={isSelected ? t.brand : t.muted}
                             strokeWidth={2.2}
                           />
-                          <Text
+                          <Text maxFontSizeMultiplier={1.3}
                             style={[
                               styles.channelChipText,
                               { color: isSelected ? t.brand : t.textSecondary, fontFamily: isSelected ? 'Montserrat_700Bold' : 'Montserrat_500Medium' },
@@ -444,14 +444,14 @@ export function AddMoneySheet({ visible, onClose, onSuccess }: AddMoneySheetProp
                     ) : (
                       <View style={styles.btnInner}>
                         <HugeiconsIcon icon={FlashIcon} size={17} color="#FFFFFF" strokeWidth={2.4} />
-                        <Text style={styles.primaryActionBtnText}>
+                        <Text maxFontSizeMultiplier={1.3} style={styles.primaryActionBtnText}>
                           Deposit ₦{selectedAmount.toLocaleString('en-NG')}
                         </Text>
                       </View>
                     )}
                   </TouchableOpacity>
 
-                  <Text style={[styles.footnoteText, { color: t.muted }]}>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.footnoteText, { color: t.muted }]}>
                     Credits live to your Supabase account balance immediately.
                   </Text>
                 </View>

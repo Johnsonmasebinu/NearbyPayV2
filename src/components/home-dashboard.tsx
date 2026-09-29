@@ -11,9 +11,10 @@ import {
     UserIcon,
     ViewIcon,
     ViewOffSlashIcon,
-} from '@hugeicons/core-free-icons';
+} from '@/lib/icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
-import { useEffect, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { Image } from 'expo-image';
 import {
     Animated,
@@ -29,6 +30,8 @@ import {
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 import { useToast } from '@/components/ui/toast';
+import { NotificationsSheet } from '@/components/notifications-sheet';
+import { useNotifications } from '@/hooks/notifications-provider';
 import { getAppTheme, GRADIENT_STOPS, HERO_STOPS } from '@/constants/app-theme';
 import { useAppTheme } from '@/hooks/theme-provider';
 import { select, tap } from '@/lib/haptics';
@@ -142,6 +145,15 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
   });
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // The check-in screen holds its own copy of this data, so re-pull it every
+  // time Home regains focus — otherwise today's prompt still says "Spin to
+  // unlock" after the spin is already done.
+  useFocusEffect(
+    useCallback(() => {
+      void refreshCheckIn();
+    }, [refreshCheckIn]),
+  );
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
@@ -152,6 +164,9 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
       setIsRefreshing(false);
     }
   };
+
+  const { unreadCount } = useNotifications();
+  const [notificationSheetVisible, setNotificationSheetVisible] = useState(false);
 
   const handleActionPress = (action: string) => {
     tap();
@@ -172,7 +187,8 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
   })}`;
 
   return (
-    <ScrollView
+    <>
+      <ScrollView
       style={[styles.scrollView, { backgroundColor: t.pageBg }]}
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
@@ -204,7 +220,7 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
           <View style={styles.header}>
             <View style={styles.brandRow}>
               <Image source={require('@/assets/images/logo/logo.png')} style={styles.logo} contentFit="contain" />
-              <Text style={styles.brandTitle}>NearbyPay</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.brandTitle}>NearbyPay</Text>
             </View>
             <View style={styles.headerActions}>
               <TouchableOpacity
@@ -212,10 +228,16 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
                 activeOpacity={0.7}
                 onPress={() => {
                   tap();
-                  show({ message: 'You have 1 new payment alert', variant: 'info' });
+                  setNotificationSheetVisible(true);
                 }}>
                 <HugeiconsIcon icon={Notification03Icon} size={18} color="#FFFFFF" />
-                <View style={styles.notificationDot} />
+                {unreadCount > 0 && (
+                  <View style={styles.notificationBadge}>
+                    <Text maxFontSizeMultiplier={1.3} style={styles.notificationBadgeText}>
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </Text>
+                  </View>
+                )}
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.avatarButton}
@@ -235,14 +257,14 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
           </View>
 
           <View style={styles.greetingSection}>
-            <Text style={styles.greetingSub}>Good morning,</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.greetingSub}>Good morning,</Text>
             <View style={styles.nameRow}>
-              <Text style={styles.userName}>{profile.name}</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.userName}>{profile.name}</Text>
               <View style={styles.verifiedBadge}>
                 <HugeiconsIcon icon={Tick02Icon} size={10} color="#FFFFFF" strokeWidth={2.8} />
               </View>
             </View>
-            <Text style={styles.tagline}>Send. Receive. Stay Close.</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.tagline}>Send. Receive. Stay Close.</Text>
           </View>
 
           <View style={styles.balanceCard}>
@@ -265,7 +287,7 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
               <TwinklingStar key={star.id} star={star} />
             ))}
             <View style={styles.balanceTopRow}>
-              <Text style={styles.balanceLabel}>Total Balance</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.balanceLabel}>Total Balance</Text>
               <TouchableOpacity
                 onPress={() => {
                   tap();
@@ -281,7 +303,7 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
                 />
               </TouchableOpacity>
             </View>
-            <Text style={styles.balanceAmount}>{isBalanceVisible ? formattedBalance : '****'}</Text>
+            <Text maxFontSizeMultiplier={1.3} adjustsFontSizeToFit numberOfLines={1} style={styles.balanceAmount}>{isBalanceVisible ? formattedBalance : '****'}</Text>
             <TouchableOpacity
               style={styles.availableRow}
               activeOpacity={0.8}
@@ -290,8 +312,8 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
                 onNavigate('history');
               }}>
               <View>
-                <Text style={styles.availableLabel}>Available Balance</Text>
-                <Text style={styles.availableValue}>{isBalanceVisible ? formattedBalance : '****'}</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.availableLabel}>Available Balance</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.availableValue}>{isBalanceVisible ? formattedBalance : '****'}</Text>
               </View>
               <HugeiconsIcon icon={ArrowRight01Icon} size={15} color="rgba(255, 255, 255, 0.85)" />
             </TouchableOpacity>
@@ -313,17 +335,17 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
               <HugeiconsIcon icon={Calendar03Icon} size={19} color={t.brand} />
             </View>
             <View style={styles.checkInPromptCopy}>
-              <Text style={[styles.checkInPromptEyebrow, { color: t.brand }]}>DAILY CHECK-IN AVAILABLE</Text>
-              <Text style={[styles.checkInPromptTitle, { color: t.textPrimary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.checkInPromptEyebrow, { color: t.brand }]}>DAILY CHECK-IN AVAILABLE</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.checkInPromptTitle, { color: t.textPrimary }]}>
                 Spin to reveal today&apos;s mystery reward!
               </Text>
-              <Text style={[styles.checkInPromptReward, { color: t.textSecondary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.checkInPromptReward, { color: t.textSecondary }]}>
                 {availableCheckIn.dayName}&apos;s reward is ready • Spin to unlock
               </Text>
             </View>
             <View style={[styles.checkInPromptButton, { backgroundColor: t.brand }]}>
               <HugeiconsIcon icon={RotateRight01Icon} size={14} color="#FFFFFF" strokeWidth={2.2} />
-              <Text style={styles.checkInPromptButtonText}>Spin</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.checkInPromptButtonText}>Spin</Text>
             </View>
           </TouchableOpacity>
         )}
@@ -339,7 +361,7 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
               <View style={[styles.actionIconWrap, { backgroundColor: t.brandTint }]}>
                 <HugeiconsIcon icon={action.icon} size={19} color={t.brand} />
               </View>
-              <Text style={[styles.actionLabel, { color: t.textPrimary }]}>{action.label}</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.actionLabel, { color: t.textPrimary }]}>{action.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -358,8 +380,8 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
           <View style={styles.promoGlowCircle} pointerEvents="none" />
           <Image source={require('@/assets/images/dash/image_2.png')} style={styles.promoImage} contentFit="contain" />
           <View style={styles.promoTextCol}>
-            <Text style={styles.promoTitle}>{'One App.\nAll Your People.'}</Text>
-            <Text style={styles.promoSubtitle}>{'Send money, split bills,\ncollect payments and more.'}</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.promoTitle}>{'One App.\nAll Your People.'}</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.promoSubtitle}>{'Send money, split bills,\ncollect payments and more.'}</Text>
             <TouchableOpacity
               style={styles.promoButton}
               activeOpacity={0.8}
@@ -367,7 +389,7 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
                 tap();
                 show({ message: 'Discover NearbyPay social transfers & split pay', variant: 'info' });
               }}>
-              <Text style={styles.promoButtonText}>Explore NearbyPay</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.promoButtonText}>Explore NearbyPay</Text>
               <HugeiconsIcon icon={ArrowRight01Icon} size={12} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
@@ -375,12 +397,12 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
 
         <View style={styles.transactionsSection}>
           <View style={styles.transactionsHeader}>
-            <Text style={[styles.transactionsTitle, { color: t.textPrimary }]}>Recent Transactions</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.transactionsTitle, { color: t.textPrimary }]}>Recent Transactions</Text>
             <TouchableOpacity activeOpacity={0.7} onPress={() => {
               select();
               onNavigate('history');
             }}>
-              <Text style={[styles.seeAllText, { color: t.brand }]}>See all</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.seeAllText, { color: t.brand }]}>See all</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.transactionsList}>
@@ -405,10 +427,10 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
                   />
                 </View>
                 <View style={styles.txInfo}>
-                  <Text style={[styles.txTitle, { color: t.textPrimary }]}>{tx.title}</Text>
-                  <Text style={[styles.txDate, { color: t.textSecondary }]}>{formatTransactionDate(tx.created_at)}</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.txTitle, { color: t.textPrimary }]}>{tx.title}</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.txDate, { color: t.textSecondary }]}>{formatTransactionDate(tx.created_at)}</Text>
                 </View>
-                <Text style={[styles.txAmount, { color: tx.type === 'received' ? '#16A34A' : '#EF4444' }]}>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.txAmount, { color: tx.type === 'received' ? '#16A34A' : '#EF4444' }]}>
                   {tx.type === 'received' ? '+' : '-'} ₦{tx.amount.toLocaleString('en-NG')}
                 </Text>
               </TouchableOpacity>
@@ -416,7 +438,12 @@ export function HomeDashboard({ onNavigate }: HomeDashboardProps) {
           </View>
         </View>
       </View>
-    </ScrollView>
+      </ScrollView>
+      <NotificationsSheet
+        visible={notificationSheetVisible}
+        onClose={() => setNotificationSheetVisible(false)}
+      />
+    </>
   );
 }
 
@@ -489,6 +516,16 @@ const styles = StyleSheet.create({
   notificationDot: {
     position: 'absolute', top: 8, right: 9, width: 8, height: 8, borderRadius: 4,
     backgroundColor: '#F87171', borderWidth: 1.5, borderColor: '#1C1A55',
+  },
+  notificationBadge: {
+    position: 'absolute', top: 2, right: 2, minWidth: 18, height: 18, borderRadius: 9,
+    backgroundColor: '#EF4444', borderWidth: 1.5, borderColor: '#1C1A55',
+    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4,
+  },
+  notificationBadgeText: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 10,
+    color: '#FFFFFF',
   },
   avatarButton: {
     width: 38, height: 38, borderRadius: 19, overflow: 'hidden', borderWidth: 2,

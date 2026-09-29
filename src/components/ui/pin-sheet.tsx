@@ -1,4 +1,4 @@
-import { Cancel01Icon, Delete02Icon, LockPasswordIcon } from '@hugeicons/core-free-icons';
+import { Cancel01Icon, Delete02Icon, LockPasswordIcon } from '@/lib/icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import React, { useState } from 'react';
 import {
@@ -359,8 +359,8 @@ export function PinSheet({
             </View>
 
             <View style={styles.headerTitles}>
-              <Text style={[styles.sheetTitle, { color: t.textPrimary }]}>{headerInfo.title}</Text>
-              <Text style={[styles.sheetSubtitle, { color: t.textSecondary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.sheetTitle, { color: t.textPrimary }]}>{headerInfo.title}</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.sheetSubtitle, { color: t.textSecondary }]}>
                 {headerInfo.subtitle}
               </Text>
             </View>
@@ -378,14 +378,14 @@ export function PinSheet({
           {/* Error Message */}
           {errorMessage.length > 0 && (
             <View style={[styles.errorBox, { backgroundColor: t.dangerTint }]}>
-              <Text style={[styles.errorText, { color: t.danger }]}>{errorMessage}</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.errorText, { color: t.danger }]}>{errorMessage}</Text>
             </View>
           )}
 
           {/* Password Input Step for Reset Mode */}
           {mode === 'reset' && step === 1 ? (
             <View style={styles.passwordStepWrap}>
-              <TextInput
+              <TextInput maxFontSizeMultiplier={1.3}
                 style={[styles.passwordInput, { backgroundColor: t.inputBg, borderColor: t.inputBorder, color: t.textPrimary }]}
                 placeholder="Enter account password"
                 placeholderTextColor={t.muted}
@@ -399,7 +399,7 @@ export function PinSheet({
                 style={[styles.submitPasswordBtn, { backgroundColor: t.brand }]}
                 activeOpacity={0.85}
                 onPress={handlePasswordSubmit}>
-                <Text style={styles.submitPasswordBtnText}>Continue</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.submitPasswordBtnText}>Continue</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -426,7 +426,7 @@ export function PinSheet({
               {isSubmitting && (
                 <View style={styles.loadingWrap}>
                   <ActivityIndicator size="small" color={t.brand} />
-                  <Text style={[styles.loadingText, { color: t.textSecondary }]}>Securing PIN...</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.loadingText, { color: t.textSecondary }]}>Securing PIN...</Text>
                 </View>
               )}
 
@@ -462,7 +462,7 @@ export function PinSheet({
                           activeOpacity={0.65}
                           onPress={() => handleKeyPress(item)}
                           disabled={isSubmitting}>
-                          <Text style={[styles.keyButtonText, { color: t.textPrimary }]}>{item}</Text>
+                          <Text maxFontSizeMultiplier={1.3} style={[styles.keyButtonText, { color: t.textPrimary }]}>{item}</Text>
                         </TouchableOpacity>
                       );
                     })}

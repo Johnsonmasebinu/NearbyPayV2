@@ -139,10 +139,10 @@ function ToastView({ config, onDismiss }: { config: ToastConfig; onDismiss: () =
         ]}
       >
         <View style={[styles.iconCircle, { borderColor: palette.border }]}>
-          <Text style={[styles.iconText, { color: palette.border }]}>{palette.icon}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={[styles.iconText, { color: palette.border }]}>{palette.icon}</Text>
         </View>
 
-        <Text
+        <Text maxFontSizeMultiplier={1.3}
           style={[
             styles.message,
             { color: isDark ? '#F1F5F9' : '#1E293B' },
@@ -160,7 +160,7 @@ function ToastView({ config, onDismiss }: { config: ToastConfig; onDismiss: () =
             }}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Text style={[styles.actionText, { color: palette.border }]}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.actionText, { color: palette.border }]}>
               {config.action.label}
             </Text>
           </TouchableOpacity>

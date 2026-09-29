@@ -1,4 +1,4 @@
-import { Camera01Icon, Cancel01Icon, Tick02Icon } from '@hugeicons/core-free-icons';
+import { Camera01Icon, Cancel01Icon, Tick02Icon } from '@/lib/icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
@@ -117,8 +117,8 @@ export function AvatarPickerSheet({
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerTitles}>
-              <Text style={[styles.title, { color: t.textPrimary }]}>Choose Avatar</Text>
-              <Text style={[styles.subtitle, { color: t.textSecondary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.title, { color: t.textPrimary }]}>Choose Avatar</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.subtitle, { color: t.textSecondary }]}>
                 Pick an avatar for your profile
               </Text>
             </View>
@@ -141,7 +141,7 @@ export function AvatarPickerSheet({
                 cachePolicy="memory-disk"
               />
             </View>
-            <Text style={[styles.previewHint, { color: t.textSecondary }]}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.previewHint, { color: t.textSecondary }]}>
               Tap any avatar below to preview
             </Text>
           </View>
@@ -157,7 +157,7 @@ export function AvatarPickerSheet({
             ) : (
               <>
                 <HugeiconsIcon icon={Camera01Icon} size={17} color={t.brand} />
-                <Text style={[styles.customUploadBtnText, { color: t.brand }]}>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.customUploadBtnText, { color: t.brand }]}>
                   Upload Custom Photo
                 </Text>
               </>
@@ -166,7 +166,7 @@ export function AvatarPickerSheet({
 
           <View style={styles.pickerDividerRow}>
             <View style={[styles.pickerDividerLine, { backgroundColor: t.divider }]} />
-            <Text style={[styles.pickerDividerText, { color: t.textSecondary }]}>OR CHOOSE A MEMO</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.pickerDividerText, { color: t.textSecondary }]}>OR CHOOSE A MEMO</Text>
             <View style={[styles.pickerDividerLine, { backgroundColor: t.divider }]} />
           </View>
 
@@ -214,14 +214,14 @@ export function AvatarPickerSheet({
               style={[styles.cancelBtn, { backgroundColor: t.chipBg, borderColor: t.cardBorder }]}
               activeOpacity={0.7}
               onPress={onClose}>
-              <Text style={[styles.cancelBtnText, { color: t.textPrimary }]}>Cancel</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.cancelBtnText, { color: t.textPrimary }]}>Cancel</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.saveBtn, { backgroundColor: t.brand }]}
               activeOpacity={0.85}
               onPress={handleConfirm}>
-              <Text style={styles.saveBtnText}>Save Avatar</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.saveBtnText}>Save Avatar</Text>
             </TouchableOpacity>
           </View>
         </View>

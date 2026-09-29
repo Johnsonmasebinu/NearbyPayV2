@@ -11,7 +11,7 @@ import {
   Tv01Icon,
   Wallet01Icon,
   WifiIcon,
-} from '@hugeicons/core-free-icons';
+} from '@/lib/icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
@@ -240,8 +240,8 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
           </TouchableOpacity>
 
           <View style={styles.topTitles}>
-            <Text style={[styles.topEyebrow, { color: t.brand }]}>UTILITIES & BILLS</Text>
-            <Text style={[styles.screenTitle, { color: t.textPrimary }]}>More Services</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.topEyebrow, { color: t.brand }]}>UTILITIES & BILLS</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.screenTitle, { color: t.textPrimary }]}>More Services</Text>
           </View>
 
           <TouchableOpacity
@@ -266,20 +266,20 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
                 <HugeiconsIcon icon={Wallet01Icon} size={16} color={t.brand} />
               </View>
               <View>
-                <Text style={[styles.balanceLabel, { color: t.muted }]}>AVAILABLE WALLET BALANCE</Text>
-                <Text style={[styles.balanceValue, { color: t.textPrimary }]}>₦84,520.00</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.balanceLabel, { color: t.muted }]}>AVAILABLE WALLET BALANCE</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.balanceValue, { color: t.textPrimary }]}>₦84,520.00</Text>
               </View>
             </View>
             <View style={[styles.cashbackBadge, { backgroundColor: t.successTint }]}>
               <HugeiconsIcon icon={Tick02Icon} size={11} color={t.success} strokeWidth={2.5} />
-              <Text style={[styles.cashbackText, { color: t.success }]}>Auto-Cashback</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.cashbackText, { color: t.success }]}>Auto-Cashback</Text>
             </View>
           </View>
 
           {/* ─── 4 Core Bill Services ────────────────────────────── */}
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: t.textPrimary }]}>Bills & Utilities</Text>
-            <Text style={[styles.sectionSubtitle, { color: t.textSecondary }]}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.sectionTitle, { color: t.textPrimary }]}>Bills & Utilities</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.sectionSubtitle, { color: t.textSecondary }]}>
               Recharge phones, electricity & television
             </Text>
           </View>
@@ -324,7 +324,7 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
                           backgroundColor: isBulb ? t.successTint : t.brandTint,
                         },
                       ]}>
-                      <Text
+                      <Text maxFontSizeMultiplier={1.3}
                         style={[
                           styles.serviceBadgeText,
                           { color: isBulb ? t.success : t.brand },
@@ -335,19 +335,19 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
                   </View>
 
                   <View style={styles.serviceTextGroup}>
-                    <Text style={[styles.serviceLabel, { color: t.textPrimary }]}>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.serviceLabel, { color: t.textPrimary }]}>
                       {service.label}
                     </Text>
-                    <Text style={[styles.serviceTagline, { color: t.brand }]}>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.serviceTagline, { color: t.brand }]}>
                       {service.tagline}
                     </Text>
-                    <Text style={[styles.serviceDesc, { color: t.textSecondary }]} numberOfLines={2}>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.serviceDesc, { color: t.textSecondary }]} numberOfLines={2}>
                       {service.description}
                     </Text>
                   </View>
 
                   <View style={[styles.serviceCardFooter, { borderTopColor: t.divider }]}>
-                    <Text style={[styles.tapToPay, { color: t.brand }]}>Pay Now</Text>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.tapToPay, { color: t.brand }]}>Pay Now</Text>
                     <HugeiconsIcon icon={ArrowRight01Icon} size={14} color={t.brand} />
                   </View>
                 </TouchableOpacity>
@@ -361,10 +361,10 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
               <HugeiconsIcon icon={FlashIcon} size={20} color={t.brand} />
             </View>
             <View style={styles.meshNoticeInfo}>
-              <Text style={[styles.meshNoticeTitle, { color: t.textPrimary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.meshNoticeTitle, { color: t.textPrimary }]}>
                 Offline Bill Delegation
               </Text>
-              <Text style={[styles.meshNoticeText, { color: t.textSecondary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.meshNoticeText, { color: t.textSecondary }]}>
                 No mobile data? NearbyPay broadcasts encrypted token requests to nearby merchants via BLE
                 mesh so you can recharge anytime.
               </Text>
@@ -373,8 +373,8 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
 
           {/* ─── Recent Bill Payments ────────────────────────────── */}
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: t.textPrimary }]}>Recent Utility Payments</Text>
-            <Text style={[styles.sectionSubtitle, { color: t.textSecondary }]}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.sectionTitle, { color: t.textPrimary }]}>Recent Utility Payments</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.sectionSubtitle, { color: t.textSecondary }]}>
               Demo history · this session only · no real purchases
             </Text>
           </View>
@@ -411,19 +411,19 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
                   </View>
 
                   <View style={styles.recentBillDetails}>
-                    <Text style={[styles.recentBillTitle, { color: t.textPrimary }]}>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.recentBillTitle, { color: t.textPrimary }]}>
                       {item.title}
                     </Text>
-                    <Text style={[styles.recentBillAccount, { color: t.textSecondary }]}>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.recentBillAccount, { color: t.textSecondary }]}>
                       {item.account} • {item.date}
                     </Text>
                   </View>
 
                   <View style={styles.recentBillAction}>
-                    <Text style={[styles.recentBillAmount, { color: t.textPrimary }]}>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.recentBillAmount, { color: t.textPrimary }]}>
                       {item.amount}
                     </Text>
-                    <Text style={[styles.repeatText, { color: t.brand }]}>Repeat</Text>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.repeatText, { color: t.brand }]}>Repeat</Text>
                   </View>
                 </TouchableOpacity>
               );
@@ -465,11 +465,11 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
                         color={activeService.id === 'light' ? t.warning : t.brand}
                       />
                     )}
-                    <Text style={[styles.sheetTitle, { color: t.textPrimary }]}>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.sheetTitle, { color: t.textPrimary }]}>
                       Pay {activeService?.label}
                     </Text>
                   </View>
-                  <Text style={[styles.sheetSubtitle, { color: t.textSecondary }]}>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.sheetSubtitle, { color: t.textSecondary }]}>
                     {activeService?.description}
                   </Text>
                 </View>
@@ -484,7 +484,7 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
 
               <ScrollView style={styles.formScroll} showsVerticalScrollIndicator={false}>
                 {/* Provider Selector Chips */}
-                <Text style={[styles.fieldLabel, { color: t.textSecondary }]}>SELECT PROVIDER</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.fieldLabel, { color: t.textSecondary }]}>SELECT PROVIDER</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.providerScroll}>
                   <View style={styles.providerRow}>
                     {activeService?.providers.map((p) => {
@@ -501,7 +501,7 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
                           ]}
                           activeOpacity={0.7}
                           onPress={() => setSelectedProvider(p)}>
-                          <Text
+                          <Text maxFontSizeMultiplier={1.3}
                             style={[
                               styles.providerChipText,
                               { color: isSelected ? '#FFFFFF' : t.textPrimary },
@@ -517,7 +517,7 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
                 {/* Meter Type (for light) */}
                 {activeService?.id === 'light' && (
                   <View style={styles.formGroup}>
-                    <Text style={[styles.fieldLabel, { color: t.textSecondary }]}>METER TYPE</Text>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.fieldLabel, { color: t.textSecondary }]}>METER TYPE</Text>
                     <View style={[styles.segmentTrack, { backgroundColor: t.inputBg, borderColor: t.inputBorder }]}>
                       {(['Prepaid', 'Postpaid'] as const).map((m) => {
                         const isMSelected = meterType === m;
@@ -530,7 +530,7 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
                             ]}
                             activeOpacity={0.8}
                             onPress={() => setMeterType(m)}>
-                            <Text
+                            <Text maxFontSizeMultiplier={1.3}
                               style={[
                                 styles.segmentOptionText,
                                 { color: isMSelected ? '#FFFFFF' : t.textSecondary },
@@ -547,18 +547,18 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
                 {/* Account / Meter / Phone Input */}
                 <View style={styles.formGroup}>
                   <View style={styles.inputHeader}>
-                    <Text style={[styles.fieldLabel, { color: t.textSecondary }]}>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.fieldLabel, { color: t.textSecondary }]}>
                       {activeService?.inputLabel.toUpperCase()}
                     </Text>
                     {(activeService?.id === 'airtime' || activeService?.id === 'data') && (
                       <TouchableOpacity
                         onPress={useMyPhone}
                         activeOpacity={0.7}>
-                        <Text style={[styles.autofillText, { color: t.brand }]}>Use My Phone</Text>
+                        <Text maxFontSizeMultiplier={1.3} style={[styles.autofillText, { color: t.brand }]}>Use My Phone</Text>
                       </TouchableOpacity>
                     )}
                   </View>
-                  <TextInput
+                  <TextInput maxFontSizeMultiplier={1.3}
                     value={accountInput}
                     onChangeText={setAccountInput}
                     style={[
@@ -573,8 +573,8 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
 
                 {/* Amount Input */}
                 <View style={styles.formGroup}>
-                  <Text style={[styles.fieldLabel, { color: t.textSecondary }]}>AMOUNT (₦)</Text>
-                  <TextInput
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.fieldLabel, { color: t.textSecondary }]}>AMOUNT (₦)</Text>
+                  <TextInput maxFontSizeMultiplier={1.3}
                     value={amountInput}
                     onChangeText={setAmountInput}
                     style={[
@@ -603,7 +603,7 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
                           ]}
                           activeOpacity={0.7}
                           onPress={() => setAmountInput(String(amt))}>
-                          <Text
+                          <Text maxFontSizeMultiplier={1.3}
                             style={[
                               styles.quickAmountText,
                               { color: isSelected ? t.brand : t.textPrimary },
@@ -619,12 +619,12 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
                 {/* Fee & Summary */}
                 <View style={[styles.summaryBox, { backgroundColor: t.inputBg, borderColor: t.inputBorder }]}>
                   <View style={styles.summaryLine}>
-                    <Text style={[styles.summaryLabel, { color: t.muted }]}>Service Fee</Text>
-                    <Text style={[styles.summaryVal, { color: t.success }]}>₦0.00 (Free)</Text>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.summaryLabel, { color: t.muted }]}>Service Fee</Text>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.summaryVal, { color: t.success }]}>₦0.00 (Free)</Text>
                   </View>
                   <View style={styles.summaryLine}>
-                    <Text style={[styles.summaryLabel, { color: t.muted }]}>Payment Source</Text>
-                    <Text style={[styles.summaryVal, { color: t.warning }]}>Demo wallet · not charged</Text>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.summaryLabel, { color: t.muted }]}>Payment Source</Text>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.summaryVal, { color: t.warning }]}>Demo wallet · not charged</Text>
                   </View>
                 </View>
               </ScrollView>
@@ -635,12 +635,12 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
                 activeOpacity={0.8}
                 disabled={isProcessing}
                 onPress={handlePay}>
-                <Text style={styles.payButtonText}>
+                <Text maxFontSizeMultiplier={1.3} style={styles.payButtonText}>
                   {isProcessing ? 'Processing Transaction...' : `Pay ₦${parseFloat(amountInput || '0').toLocaleString()}`}
                 </Text>
               </TouchableOpacity>
               <View style={[styles.testModeNotice, { backgroundColor: t.warningTint, borderColor: t.warning }]}>
-                <Text style={[styles.testModeNoticeText, { color: t.warning }]}>TEST MODE · No real payment will be made</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.testModeNoticeText, { color: t.warning }]}>TEST MODE · No real payment will be made</Text>
               </View>
             </View>
           </View>
@@ -659,48 +659,48 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
               </View>
 
               <View style={[styles.testModeBadge, { backgroundColor: t.warningTint, borderColor: t.warning }]}>
-                <Text style={[styles.testModeBadgeText, { color: t.warning }]}>TEST MODE · SIMULATED</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.testModeBadgeText, { color: t.warning }]}>TEST MODE · SIMULATED</Text>
               </View>
-              <Text style={[styles.receiptHeading, { color: t.textPrimary }]}>Demo Payment Complete</Text>
-              <Text style={[styles.receiptSubhead, { color: t.textSecondary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.receiptHeading, { color: t.textPrimary }]}>Demo Payment Complete</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.receiptSubhead, { color: t.textSecondary }]}>
                 This is a hackathon demo. No money was charged and no real bill or service was delivered.
               </Text>
 
               {/* Token box for light */}
               {successReceipt?.token && (
                 <View style={[styles.tokenBox, { backgroundColor: t.warningTint, borderColor: t.warning }]}>
-                  <Text style={[styles.tokenLabel, { color: t.warning }]}>DEMO TOKEN · NOT VALID</Text>
-                  <Text style={[styles.tokenCode, { color: t.textPrimary }]}>{successReceipt.token}</Text>
-                  <Text style={[styles.tokenSub, { color: t.textSecondary }]}>For presentation only. Do not enter into a meter.</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.tokenLabel, { color: t.warning }]}>DEMO TOKEN · NOT VALID</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.tokenCode, { color: t.textPrimary }]}>{successReceipt.token}</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.tokenSub, { color: t.textSecondary }]}>For presentation only. Do not enter into a meter.</Text>
                 </View>
               )}
 
               <View style={[styles.receiptDetails, { backgroundColor: t.inputBg, borderColor: t.inputBorder }]}>
                 <View style={styles.receiptLine}>
-                  <Text style={[styles.receiptLabel, { color: t.muted }]}>Service</Text>
-                  <Text style={[styles.receiptValue, { color: t.textPrimary }]}>{successReceipt?.service}</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.receiptLabel, { color: t.muted }]}>Service</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.receiptValue, { color: t.textPrimary }]}>{successReceipt?.service}</Text>
                 </View>
                 <View style={styles.receiptLine}>
-                  <Text style={[styles.receiptLabel, { color: t.muted }]}>Provider</Text>
-                  <Text style={[styles.receiptValue, { color: t.textPrimary }]}>{successReceipt?.provider}</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.receiptLabel, { color: t.muted }]}>Provider</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.receiptValue, { color: t.textPrimary }]}>{successReceipt?.provider}</Text>
                 </View>
                 <View style={styles.receiptLine}>
-                  <Text style={[styles.receiptLabel, { color: t.muted }]}>Account</Text>
-                  <Text style={[styles.receiptValue, { color: t.textPrimary }]}>{successReceipt?.account}</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.receiptLabel, { color: t.muted }]}>Account</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.receiptValue, { color: t.textPrimary }]}>{successReceipt?.account}</Text>
                 </View>
                 <View style={styles.receiptLine}>
-                  <Text style={[styles.receiptLabel, { color: t.muted }]}>Demo Amount</Text>
-                  <Text style={[styles.receiptValue, { color: t.textPrimary, fontFamily: 'Montserrat_700Bold' }]}>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.receiptLabel, { color: t.muted }]}>Demo Amount</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.receiptValue, { color: t.textPrimary, fontFamily: 'Montserrat_700Bold' }]}>
                     {successReceipt?.amount}
                   </Text>
                 </View>
                 <View style={styles.receiptLine}>
-                  <Text style={[styles.receiptLabel, { color: t.muted }]}>Date & Time</Text>
-                  <Text style={[styles.receiptValue, { color: t.textPrimary }]}>{successReceipt?.timestamp}</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.receiptLabel, { color: t.muted }]}>Date & Time</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.receiptValue, { color: t.textPrimary }]}>{successReceipt?.timestamp}</Text>
                 </View>
                 <View style={styles.receiptLine}>
-                  <Text style={[styles.receiptLabel, { color: t.muted }]}>Test Reference</Text>
-                  <Text style={[styles.receiptValue, { color: t.textPrimary }]}>{successReceipt?.reference}</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.receiptLabel, { color: t.muted }]}>Test Reference</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.receiptValue, { color: t.textPrimary }]}>{successReceipt?.reference}</Text>
                 </View>
               </View>
 
@@ -711,7 +711,7 @@ export default function MoreScreen({ onBack }: { onBack?: () => void }) {
                   setSuccessReceipt(null);
                   setActiveService(null);
                 }}>
-                <Text style={styles.receiptDoneBtnText}>Done</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.receiptDoneBtnText}>Done</Text>
               </TouchableOpacity>
             </View>
           </View>

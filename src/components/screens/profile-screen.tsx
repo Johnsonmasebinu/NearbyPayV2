@@ -23,17 +23,21 @@ import {
   Share01Icon,
   SmartPhone01Icon,
   Sun03Icon,
-} from '@hugeicons/core-free-icons';
+} from '@/lib/icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
+import * as Clipboard from 'expo-clipboard';
 import { Image } from 'expo-image';
+import * as MediaLibrary from 'expo-media-library';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Modal,
   Platform,
   RefreshControl,
   ScrollView,
+  Share,
   StyleSheet,
   Switch,
   Text,
@@ -42,6 +46,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { captureRef } from 'react-native-view-shot';
 
 import { AddMoneySheet } from '@/components/ui/add-money-sheet';
 import QRCodeView from '@/components/ui/qr-code';
@@ -57,7 +62,7 @@ import { useTransactions } from '@/hooks/use-transactions';
 import { useUserProfile } from '@/hooks/user-profile-provider';
 import { createReceiveQrPayload } from '@/lib/receive-qr';
 import { useNearbyBluetooth } from '@/hooks/use-nearby-bluetooth';
-import { select, tap } from '@/lib/haptics';
+import { select, succeed, tap, thud } from '@/lib/haptics';
 
 export function ProfileScreen() {
   const router = useRouter();
@@ -92,6 +97,9 @@ export function ProfileScreen() {
   const [pinSheetVisible, setPinSheetVisible] = useState(false);
   const [pinSheetMode, setPinSheetMode] = useState<PinSheetMode>('change');
   const [qrSheetVisible, setQrSheetVisible] = useState(false);
+  const [isSavingQr, setIsSavingQr] = useState(false);
+  const qrExportRef = useRef<View>(null);
+  const cleanProfileTag = (profile.tag || 'user').replace(/^[@$]/, '');
   const [contactlessSheetVisible, setContactlessSheetVisible] = useState(false);
   const [addMoneyVisible, setAddMoneyVisible] = useState(false);
   const [editSheetVisible, setEditSheetVisible] = useState(false);
@@ -117,14 +125,50 @@ export function ProfileScreen() {
   };
 
   const copyToClipboard = async (text: string, label: string) => {
+    tap();
     try {
-      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-      }
+      await Clipboard.setStringAsync(text);
     } catch {
-      // fallback
+      try {
+        if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+        }
+      } catch {
+        // fallback
+      }
     }
     show({ message: `Copied ${label} to clipboard!`, variant: 'success' });
+  };
+
+  const handleSaveAndShareQr = async () => {
+    if (isSavingQr) return;
+    if (!(hasContactlessCode && profileQr?.tag === profile.tag)) {
+      show({ message: 'Set up your contactless PIN to unlock your QR first.', variant: 'info' });
+      return;
+    }
+    thud();
+    setIsSavingQr(true);
+    try {
+      const uri = await captureRef(qrExportRef, {
+        format: 'png',
+        quality: 1,
+        result: 'tmpfile',
+      });
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status === 'granted') {
+        await MediaLibrary.Asset.create(uri);
+        succeed();
+        show({ message: 'QR code saved to your gallery!', variant: 'success' });
+      }
+      // System share sheet, like the More button on Receive.
+      await Share.share({
+        message: `Send me money on NearbyPay! Cashtag: @${cleanProfileTag} (${profile.name}). Open NearbyPay → Send → To Nearby Tag and ask me for my 8-digit code.`,
+      });
+    } catch {
+      show({ message: 'Could not save or share QR code.', variant: 'error' });
+    } finally {
+      setIsSavingQr(false);
+    }
   };
 
   const openEditSheet = () => {
@@ -166,7 +210,7 @@ export function ProfileScreen() {
       }>
       {/* ─── Screen Header ───────────────────────────────────────── */}
       <View style={styles.headerRow}>
-        <Text style={[styles.headerTitle, { color: t.textPrimary }]}>Profile</Text>
+        <Text maxFontSizeMultiplier={1.3} style={[styles.headerTitle, { color: t.textPrimary }]}>Profile</Text>
         <TouchableOpacity
           style={[styles.headerIconButton, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}
           activeOpacity={0.7}
@@ -199,7 +243,7 @@ export function ProfileScreen() {
 
           <View style={styles.nameSection}>
             <View style={styles.nameRow}>
-              <Text style={[styles.userName, { color: t.textPrimary }]}>{profile.name}</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.userName, { color: t.textPrimary }]}>{profile.name}</Text>
               <HugeiconsIcon icon={CheckmarkBadge01Icon} size={18} color={t.brand} />
             </View>
 
@@ -209,11 +253,11 @@ export function ProfileScreen() {
               onPress={() => copyToClipboard(`$${profile.tag}`, 'Nearby Tag')}
               accessibilityRole="button"
               accessibilityLabel="Copy Nearby Tag">
-              <Text style={[styles.tagPillText, { color: t.brand }]}>${profile.tag}</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.tagPillText, { color: t.brand }]}>${profile.tag}</Text>
               <HugeiconsIcon icon={Copy01Icon} size={11} color={t.brand} />
             </TouchableOpacity>
 
-            <Text style={[styles.userBio, { color: t.textSecondary }]} numberOfLines={2}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.userBio, { color: t.textSecondary }]} numberOfLines={2}>
               {profile.bio || 'Making fast, secure proximity payments.'}
             </Text>
           </View>
@@ -226,7 +270,7 @@ export function ProfileScreen() {
             activeOpacity={0.7}
             onPress={openEditSheet}>
             <HugeiconsIcon icon={PencilEdit01Icon} size={15} color={t.textPrimary} />
-            <Text style={[styles.heroActionBtnText, { color: t.textPrimary }]}>Edit Profile</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.heroActionBtnText, { color: t.textPrimary }]}>Edit Profile</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -234,15 +278,15 @@ export function ProfileScreen() {
             activeOpacity={0.7}
             onPress={() => setQrSheetVisible(true)}>
             <HugeiconsIcon icon={QrCodeIcon} size={15} color={t.textPrimary} />
-            <Text style={[styles.heroActionBtnText, { color: t.textPrimary }]}>My QR</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.heroActionBtnText, { color: t.textPrimary }]}>My QR</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.heroActionBtn, { backgroundColor: t.chipBg, borderColor: t.cardBorder }]}
             activeOpacity={0.7}
-            onPress={() => copyToClipboard(`https://nearbypay.me/$${profile.tag}`, 'Profile link')}>
-            <HugeiconsIcon icon={Share01Icon} size={15} color={t.textPrimary} />
-            <Text style={[styles.heroActionBtnText, { color: t.textPrimary }]}>Share</Text>
+            onPress={() => copyToClipboard(`@${cleanProfileTag}`, 'Cashtag')}>
+            <HugeiconsIcon icon={Copy01Icon} size={15} color={t.textPrimary} />
+            <Text maxFontSizeMultiplier={1.3} style={[styles.heroActionBtnText, { color: t.textPrimary }]}>Copy Tag</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -254,21 +298,21 @@ export function ProfileScreen() {
             <HugeiconsIcon icon={BankIcon} size={18} color={t.brand} strokeWidth={2.2} />
           </View>
           <View style={styles.bankCardInfo}>
-            <Text style={[styles.bankCardLabel, { color: t.textSecondary }]}>DEMO DEPOSIT NUBAN · TEST MODE</Text>
-            <Text style={[styles.bankCardBankName, { color: t.textPrimary }]}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.bankCardLabel, { color: t.textSecondary }]}>DEMO DEPOSIT NUBAN · TEST MODE</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.bankCardBankName, { color: t.textPrimary }]}>
               {profile.bankName || 'NearbyPay MFB • Wema Bank'}
             </Text>
           </View>
           <View style={[styles.testModeBadge, { backgroundColor: t.warningTint, borderColor: t.warning }]}>
-            <Text style={[styles.testModeBadgeText, { color: t.warning }]}>TEST MODE</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.testModeBadgeText, { color: t.warning }]}>TEST MODE</Text>
           </View>
         </View>
 
         <View style={[styles.accountBox, { backgroundColor: t.inputBg, borderColor: t.inputBorder }]}>
           <View style={styles.accountNumberTopRow}>
             <View>
-              <Text style={[styles.accountNumberLabel, { color: t.muted }]}>ACCOUNT NUMBER</Text>
-              <Text style={[styles.accountNumberDigits, { color: t.textPrimary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.accountNumberLabel, { color: t.muted }]}>ACCOUNT NUMBER</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.accountNumberDigits, { color: t.textPrimary }]}>
                 {(profile.accountNumber || '9012345678').replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3')}
               </Text>
             </View>
@@ -280,15 +324,15 @@ export function ProfileScreen() {
               accessibilityRole="button"
               accessibilityLabel="Copy account number">
               <HugeiconsIcon icon={Copy01Icon} size={13} color={t.textPrimary} strokeWidth={2.2} />
-              <Text style={[styles.accountCopyBtnText, { color: t.textPrimary }]}>Copy</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.accountCopyBtnText, { color: t.textPrimary }]}>Copy</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.accountHolderDivider} />
 
           <View style={styles.accountHolderRow}>
-            <Text style={[styles.accountHolderLabel, { color: t.muted }]}>ACCOUNT NAME</Text>
-            <Text style={[styles.accountHolderText, { color: t.textPrimary }]}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.accountHolderLabel, { color: t.muted }]}>ACCOUNT NAME</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.accountHolderText, { color: t.textPrimary }]}>
               {profile.name.toUpperCase()} / NEARBYPAY
             </Text>
           </View>
@@ -302,13 +346,13 @@ export function ProfileScreen() {
           accessibilityRole="button"
           accessibilityLabel="Add test money to your account">
           <HugeiconsIcon icon={ArrowDown01Icon} size={15} color="#FFFFFF" strokeWidth={2.4} />
-          <Text style={styles.addMoneyFullBtnText}>Add Test Money</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.addMoneyFullBtnText}>Add Test Money</Text>
           <HugeiconsIcon icon={FlashIcon} size={14} color="rgba(255, 255, 255, 0.85)" strokeWidth={2.2} />
         </TouchableOpacity>
 
         <View style={styles.bankCardFooter}>
           <View style={[styles.onlineIndicatorDot, { backgroundColor: t.warning }]} />
-          <Text style={[styles.bankCardFooterText, { color: t.textSecondary }]}>
+          <Text maxFontSizeMultiplier={1.3} style={[styles.bankCardFooterText, { color: t.textSecondary }]}>
             TEST MODE · Simulated automated credit · Available: ₦{balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </Text>
         </View>
@@ -316,7 +360,7 @@ export function ProfileScreen() {
 
       {/* ─── Weekly Rewards ──────────────────────────────────────── */}
       <View style={styles.sectionGroup}>
-        <Text style={[styles.sectionHeaderTitle, { color: t.textSecondary }]}>REWARDS</Text>
+        <Text maxFontSizeMultiplier={1.3} style={[styles.sectionHeaderTitle, { color: t.textSecondary }]}>REWARDS</Text>
         <View style={[styles.groupedCard, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
           <TouchableOpacity
             style={styles.groupedRow}
@@ -328,8 +372,8 @@ export function ProfileScreen() {
               <HugeiconsIcon icon={Calendar03Icon} size={18} color={t.brand} />
             </View>
             <View style={styles.rowContentWrap}>
-              <Text style={[styles.rowItemTitle, { color: t.textPrimary }]}>Daily Check-In</Text>
-              <Text style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>View your weekly rewards and check-in</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.rowItemTitle, { color: t.textPrimary }]}>Daily Check-In</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>View your weekly rewards and check-in</Text>
             </View>
             <HugeiconsIcon icon={ArrowRight01Icon} size={17} color={t.muted} />
           </TouchableOpacity>
@@ -338,12 +382,12 @@ export function ProfileScreen() {
 
       {/* ─── Group 1: Appearance & Display ───────────────────────── */}
       <View style={styles.sectionGroup}>
-        <Text style={[styles.sectionHeaderTitle, { color: t.textSecondary }]}>APPEARANCE</Text>
+        <Text maxFontSizeMultiplier={1.3} style={[styles.sectionHeaderTitle, { color: t.textSecondary }]}>APPEARANCE</Text>
         <View style={[styles.groupedCard, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
           <View style={styles.appearanceRow}>
             <View style={styles.appearanceLabelWrap}>
-              <Text style={[styles.rowItemTitle, { color: t.textPrimary }]}>Theme Mode</Text>
-              <Text style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.rowItemTitle, { color: t.textPrimary }]}>Theme Mode</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>
                 {mode === 'dark' ? 'Dark theme active' : mode === 'light' ? 'Light theme active' : 'System auto match'}
               </Text>
             </View>
@@ -368,7 +412,7 @@ export function ProfileScreen() {
                       size={14}
                       color={isActive ? '#FFFFFF' : t.textSecondary}
                     />
-                    <Text
+                    <Text maxFontSizeMultiplier={1.3}
                       style={[
                         styles.segmentText,
                         { color: isActive ? '#FFFFFF' : t.textSecondary },
@@ -385,7 +429,7 @@ export function ProfileScreen() {
 
       {/* ─── Group 2: Payment & Mesh Preferences ─────────────────── */}
       <View style={styles.sectionGroup}>
-        <Text style={[styles.sectionHeaderTitle, { color: t.textSecondary }]}>PAYMENTS & MESH</Text>
+        <Text maxFontSizeMultiplier={1.3} style={[styles.sectionHeaderTitle, { color: t.textSecondary }]}>PAYMENTS & MESH</Text>
         <View style={[styles.groupedCard, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
           {/* Nearby receiver advertising is active only while the app is open. */}
           <View style={styles.groupedRow}>
@@ -393,8 +437,8 @@ export function ProfileScreen() {
               <HugeiconsIcon icon={BluetoothIcon} size={18} color={t.brand} />
             </View>
             <View style={styles.rowContentWrap}>
-              <Text style={[styles.rowItemTitle, { color: t.textPrimary }]}>Nearby Bluetooth discovery</Text>
-              <Text style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.rowItemTitle, { color: t.textPrimary }]}>Nearby Bluetooth discovery</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>
                 {nearbyBluetooth.isAdvertising
                   ? 'Advertising your receive tag while NearbyPay is open.'
                   : !nearbyBluetooth.bluetoothAvailable
@@ -435,15 +479,15 @@ export function ProfileScreen() {
               <HugeiconsIcon icon={FlashIcon} size={18} color={t.brand} />
             </View>
             <View style={styles.rowContentWrap}>
-              <Text style={[styles.rowItemTitle, { color: t.textPrimary }]}>Contactless receive code</Text>
-              <Text style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.rowItemTitle, { color: t.textPrimary }]}>Contactless receive code</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>
                 {hasContactlessCode
                   ? 'Enabled. Tap to change your 8-digit code.'
                   : 'Set an 8-digit code to enable your receive QR.'}
               </Text>
             </View>
             <View style={[styles.activeStatusPill, { backgroundColor: hasContactlessCode ? t.successTint : t.brandTint }]}>
-              <Text style={[styles.activeStatusText, { color: hasContactlessCode ? t.success : t.brand }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.activeStatusText, { color: hasContactlessCode ? t.success : t.brand }]}>
                 {hasContactlessCode ? 'Enabled' : 'Set up'}
               </Text>
             </View>
@@ -453,7 +497,7 @@ export function ProfileScreen() {
 
       {/* ─── Group 3: Security & Access ──────────────────────────── */}
       <View style={styles.sectionGroup}>
-        <Text style={[styles.sectionHeaderTitle, { color: t.textSecondary }]}>SECURITY</Text>
+        <Text maxFontSizeMultiplier={1.3} style={[styles.sectionHeaderTitle, { color: t.textSecondary }]}>SECURITY</Text>
         <View style={[styles.groupedCard, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
           {/* Biometrics */}
           <View style={styles.groupedRow}>
@@ -461,8 +505,8 @@ export function ProfileScreen() {
               <HugeiconsIcon icon={BiometricAccessIcon} size={18} color={t.brand} />
             </View>
             <View style={styles.rowContentWrap}>
-              <Text style={[styles.rowItemTitle, { color: t.textPrimary }]}>Biometric Unlock</Text>
-              <Text style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.rowItemTitle, { color: t.textPrimary }]}>Biometric Unlock</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>
                 Face ID / Touch ID for app access & transfers
               </Text>
             </View>
@@ -491,8 +535,8 @@ export function ProfileScreen() {
               <HugeiconsIcon icon={LockPasswordIcon} size={18} color={t.brand} />
             </View>
             <View style={styles.rowContentWrap}>
-              <Text style={[styles.rowItemTitle, { color: t.textPrimary }]}>Transaction PIN</Text>
-              <Text style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.rowItemTitle, { color: t.textPrimary }]}>Transaction PIN</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>
                 {hasPin ? 'Protected • Tap to change PIN' : 'Not set up • Tap to create PIN'}
               </Text>
             </View>
@@ -510,11 +554,11 @@ export function ProfileScreen() {
               <HugeiconsIcon icon={IdentityCardIcon} size={18} color={t.success} />
             </View>
             <View style={styles.rowContentWrap}>
-              <Text style={[styles.rowItemTitle, { color: t.textPrimary }]}>Two-Factor Authentication</Text>
-              <Text style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>SMS & Authenticator</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.rowItemTitle, { color: t.textPrimary }]}>Two-Factor Authentication</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>SMS & Authenticator</Text>
             </View>
             <View style={[styles.activeStatusPill, { backgroundColor: t.successTint }]}>
-              <Text style={[styles.activeStatusText, { color: t.success }]}>Active</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.activeStatusText, { color: t.success }]}>Active</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -522,7 +566,7 @@ export function ProfileScreen() {
 
       {/* ─── Group 4: Notifications & Haptics ────────────────────── */}
       <View style={styles.sectionGroup}>
-        <Text style={[styles.sectionHeaderTitle, { color: t.textSecondary }]}>NOTIFICATIONS</Text>
+        <Text maxFontSizeMultiplier={1.3} style={[styles.sectionHeaderTitle, { color: t.textSecondary }]}>NOTIFICATIONS</Text>
         <View style={[styles.groupedCard, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
           {/* Push alerts */}
           <View style={styles.groupedRow}>
@@ -530,8 +574,8 @@ export function ProfileScreen() {
               <HugeiconsIcon icon={Notification03Icon} size={18} color={t.brand} />
             </View>
             <View style={styles.rowContentWrap}>
-              <Text style={[styles.rowItemTitle, { color: t.textPrimary }]}>Push Notifications</Text>
-              <Text style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.rowItemTitle, { color: t.textPrimary }]}>Push Notifications</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>
                 Real-time sent & received payment alerts
               </Text>
             </View>
@@ -554,8 +598,8 @@ export function ProfileScreen() {
               <HugeiconsIcon icon={SmartPhone01Icon} size={18} color={t.brand} />
             </View>
             <View style={styles.rowContentWrap}>
-              <Text style={[styles.rowItemTitle, { color: t.textPrimary }]}>Sound & Haptics</Text>
-              <Text style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.rowItemTitle, { color: t.textPrimary }]}>Sound & Haptics</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>
                 Haptic vibration on transfer completion
               </Text>
             </View>
@@ -574,7 +618,7 @@ export function ProfileScreen() {
 
       {/* ─── Group 5: Support & Info ─────────────────────────────── */}
       <View style={styles.sectionGroup}>
-        <Text style={[styles.sectionHeaderTitle, { color: t.textSecondary }]}>SUPPORT & ABOUT</Text>
+        <Text maxFontSizeMultiplier={1.3} style={[styles.sectionHeaderTitle, { color: t.textSecondary }]}>SUPPORT & ABOUT</Text>
         <View style={[styles.groupedCard, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
           {/* Support */}
           <TouchableOpacity
@@ -585,8 +629,8 @@ export function ProfileScreen() {
               <HugeiconsIcon icon={CustomerSupportIcon} size={18} color={t.brand} />
             </View>
             <View style={styles.rowContentWrap}>
-              <Text style={[styles.rowItemTitle, { color: t.textPrimary }]}>Support</Text>
-              <Text style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>Project information and demo details</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.rowItemTitle, { color: t.textPrimary }]}>Support</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>Project information and demo details</Text>
             </View>
             <HugeiconsIcon icon={ArrowRight01Icon} size={16} color={t.iconColor} />
           </TouchableOpacity>
@@ -602,8 +646,8 @@ export function ProfileScreen() {
               <HugeiconsIcon icon={InformationCircleIcon} size={18} color={t.brand} />
             </View>
             <View style={styles.rowContentWrap}>
-              <Text style={[styles.rowItemTitle, { color: t.textPrimary }]}>About NearbyPay</Text>
-              <Text style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>Version 2.4.0</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.rowItemTitle, { color: t.textPrimary }]}>About NearbyPay</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.rowItemSubtitle, { color: t.textSecondary }]}>Version 2.4.0</Text>
             </View>
             <HugeiconsIcon icon={ArrowRight01Icon} size={16} color={t.iconColor} />
           </TouchableOpacity>
@@ -620,12 +664,12 @@ export function ProfileScreen() {
             <View style={[styles.logoutIconCircle, { backgroundColor: t.dangerTint }]}>
               <HugeiconsIcon icon={Logout03Icon} size={18} color={t.danger} />
             </View>
-            <Text style={[styles.logoutText, { color: t.danger }]}>Log Out</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.logoutText, { color: t.danger }]}>Log Out</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      <Text style={[styles.versionFootnote, { color: t.textSecondary }]}>
+      <Text maxFontSizeMultiplier={1.3} style={[styles.versionFootnote, { color: t.textSecondary }]}>
         NearbyPay v2.4.0 (Build 412) • Bank-grade encrypted
       </Text>
 
@@ -654,8 +698,8 @@ export function ProfileScreen() {
 
             <View style={styles.sheetHeader}>
               <View>
-                <Text style={[styles.sheetTitle, { color: t.textPrimary }]}>Receive via QR</Text>
-                <Text style={[styles.sheetSubtitle, { color: t.textSecondary }]}>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.sheetTitle, { color: t.textPrimary }]}>Receive via QR</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.sheetSubtitle, { color: t.textSecondary }]}>
                   Scan to transfer money directly to {profile.name}
                 </Text>
               </View>
@@ -668,24 +712,24 @@ export function ProfileScreen() {
             </View>
 
             {/* QR Card */}
-            <View style={styles.qrCardCenter}>
+            <View ref={qrExportRef} collapsable={false} style={styles.qrCardCenter}>
               {hasContactlessCode && profileQr?.tag === profile.tag ? (
                 <View style={[styles.qrCodeWrapper, { borderColor: t.cardBorder }]}>
                   <QRCodeView value={profileQr.payload} size={190} color="#0A1E3C" />
                 </View>
               ) : hasContactlessCode ? (
                 <View style={[styles.qrCodeWrapper, styles.qrCodeDisabled, { borderColor: t.cardBorder }]}>
-                  <Text style={[styles.sheetSubtitle, { color: t.textSecondary, textAlign: 'center' }]}>Preparing secure QR...</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.sheetSubtitle, { color: t.textSecondary, textAlign: 'center' }]}>Preparing secure QR...</Text>
                 </View>
               ) : (
                 <View style={[styles.qrCodeWrapper, styles.qrCodeDisabled, { borderColor: t.cardBorder }]}>
                   <View style={[styles.qrLockIconCircle, { backgroundColor: t.brandTint }]}>
                     <HugeiconsIcon icon={LockPasswordIcon} size={24} color={t.brand} strokeWidth={2.2} />
                   </View>
-                  <Text style={[styles.qrSetupModalTitle, { color: t.textPrimary }]}>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.qrSetupModalTitle, { color: t.textPrimary }]}>
                     Activate Receive QR
                   </Text>
-                  <Text style={[styles.sheetSubtitle, { color: t.textSecondary, textAlign: 'center' }]}>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.sheetSubtitle, { color: t.textSecondary, textAlign: 'center' }]}>
                     Set an 8-digit contactless PIN to safeguard transfers and unlock your QR code.
                   </Text>
                   <TouchableOpacity
@@ -696,13 +740,13 @@ export function ProfileScreen() {
                       setContactlessSheetVisible(true);
                     }}>
                     <HugeiconsIcon icon={LockPasswordIcon} size={15} color="#FFFFFF" strokeWidth={2.2} />
-                    <Text style={styles.sheetActionBtnPrimaryText}>Set Up 8-Digit PIN</Text>
+                    <Text maxFontSizeMultiplier={1.3} style={styles.sheetActionBtnPrimaryText}>Set Up 8-Digit PIN</Text>
                   </TouchableOpacity>
                 </View>
               )}
 
               <View style={[styles.qrTagChip, { backgroundColor: t.brandTint }]}>
-                <Text style={[styles.qrTagChipText, { color: t.brand }]}>${profile.tag}</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.qrTagChipText, { color: t.brand }]}>${profile.tag}</Text>
               </View>
             </View>
 
@@ -712,22 +756,26 @@ export function ProfileScreen() {
                 style={[styles.sheetActionBtnSecondary, { backgroundColor: t.chipBg, borderColor: t.cardBorder }]}
                 activeOpacity={0.75}
                 onPress={() => {
-                  copyToClipboard(`https://nearbypay.me/$${profile.tag}`, 'Profile link');
+                  copyToClipboard(`@${cleanProfileTag}`, 'Cashtag');
                   setQrSheetVisible(false);
                 }}>
                 <HugeiconsIcon icon={Copy01Icon} size={16} color={t.textPrimary} />
-                <Text style={[styles.sheetActionBtnSecondaryText, { color: t.textPrimary }]}>Copy Link</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.sheetActionBtnSecondaryText, { color: t.textPrimary }]}>Copy Cashtag</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.sheetActionBtnPrimary, { backgroundColor: t.brand }]}
+                style={[styles.sheetActionBtnPrimary, { backgroundColor: t.brand }, isSavingQr && { opacity: 0.7 }]}
                 activeOpacity={0.85}
-                onPress={() => {
-                  setQrSheetVisible(false);
-                  show({ message: 'QR Code saved to gallery!', variant: 'success' });
-                }}>
-                <HugeiconsIcon icon={Share01Icon} size={16} color="#FFFFFF" />
-                <Text style={styles.sheetActionBtnPrimaryText}>Save & Share</Text>
+                disabled={isSavingQr}
+                onPress={handleSaveAndShareQr}>
+                {isSavingQr ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <HugeiconsIcon icon={Share01Icon} size={16} color="#FFFFFF" />
+                    <Text maxFontSizeMultiplier={1.3} style={styles.sheetActionBtnPrimaryText}>Save & Share</Text>
+                  </>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -761,8 +809,8 @@ export function ProfileScreen() {
 
             <View style={styles.sheetHeader}>
               <View>
-                <Text style={[styles.sheetTitle, { color: t.textPrimary }]}>Edit Profile</Text>
-                <Text style={[styles.sheetSubtitle, { color: t.textSecondary }]}>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.sheetTitle, { color: t.textPrimary }]}>Edit Profile</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.sheetSubtitle, { color: t.textSecondary }]}>
                   Update your public NearbyPay details
                 </Text>
               </View>
@@ -776,8 +824,8 @@ export function ProfileScreen() {
 
             <ScrollView showsVerticalScrollIndicator={false} style={styles.editFormScroll}>
               <View style={styles.formField}>
-                <Text style={[styles.formLabel, { color: t.textSecondary }]}>Full Name</Text>
-                <TextInput
+                <Text maxFontSizeMultiplier={1.3} style={[styles.formLabel, { color: t.textSecondary }]}>Full Name</Text>
+                <TextInput maxFontSizeMultiplier={1.3}
                   style={[styles.formInput, { backgroundColor: t.inputBg, borderColor: t.inputBorder, color: t.textPrimary }]}
                   value={formName}
                   onChangeText={setFormName}
@@ -787,10 +835,10 @@ export function ProfileScreen() {
               </View>
 
               <View style={styles.formField}>
-                <Text style={[styles.formLabel, { color: t.textSecondary }]}>Nearby Tag</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.formLabel, { color: t.textSecondary }]}>Nearby Tag</Text>
                 <View style={[styles.formTagWrap, { backgroundColor: t.inputBg, borderColor: t.inputBorder }]}>
-                  <Text style={[styles.formTagPrefix, { color: t.brand }]}>$</Text>
-                  <TextInput
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.formTagPrefix, { color: t.brand }]}>$</Text>
+                  <TextInput maxFontSizeMultiplier={1.3}
                     style={[styles.formTagInput, { color: t.textPrimary }]}
                     value={formTag}
                     onChangeText={setFormTag}
@@ -802,8 +850,8 @@ export function ProfileScreen() {
               </View>
 
               <View style={styles.formField}>
-                <Text style={[styles.formLabel, { color: t.textSecondary }]}>Phone Number</Text>
-                <TextInput
+                <Text maxFontSizeMultiplier={1.3} style={[styles.formLabel, { color: t.textSecondary }]}>Phone Number</Text>
+                <TextInput maxFontSizeMultiplier={1.3}
                   style={[styles.formInput, { backgroundColor: t.inputBg, borderColor: t.inputBorder, color: t.textPrimary }]}
                   value={formPhone}
                   onChangeText={setFormPhone}
@@ -814,8 +862,8 @@ export function ProfileScreen() {
               </View>
 
               <View style={styles.formField}>
-                <Text style={[styles.formLabel, { color: t.textSecondary }]}>Bio</Text>
-                <TextInput
+                <Text maxFontSizeMultiplier={1.3} style={[styles.formLabel, { color: t.textSecondary }]}>Bio</Text>
+                <TextInput maxFontSizeMultiplier={1.3}
                   style={[styles.formInput, styles.formInputMultiline, { backgroundColor: t.inputBg, borderColor: t.inputBorder, color: t.textPrimary }]}
                   value={formBio}
                   onChangeText={setFormBio}
@@ -830,7 +878,7 @@ export function ProfileScreen() {
                 style={[styles.saveBtn, { backgroundColor: t.brand }]}
                 activeOpacity={0.85}
                 onPress={handleSaveProfile}>
-                <Text style={styles.saveBtnText}>Save Changes</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.saveBtnText}>Save Changes</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -849,8 +897,8 @@ export function ProfileScreen() {
               <HugeiconsIcon icon={Logout03Icon} size={28} color={t.danger} />
             </View>
 
-            <Text style={[styles.logoutModalTitle, { color: t.textPrimary }]}>Log Out?</Text>
-            <Text style={[styles.logoutModalSubtitle, { color: t.textSecondary }]}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.logoutModalTitle, { color: t.textPrimary }]}>Log Out?</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.logoutModalSubtitle, { color: t.textSecondary }]}>
               Are you sure you want to log out of NearbyPay? You will need your PIN or credentials to sign back in.
             </Text>
 
@@ -859,7 +907,7 @@ export function ProfileScreen() {
                 style={[styles.logoutCancelBtn, { backgroundColor: t.chipBg, borderColor: t.cardBorder }]}
                 activeOpacity={0.7}
                 onPress={() => setLogoutModalVisible(false)}>
-                <Text style={[styles.logoutCancelBtnText, { color: t.textPrimary }]}>Cancel</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.logoutCancelBtnText, { color: t.textPrimary }]}>Cancel</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -874,7 +922,7 @@ export function ProfileScreen() {
                     show({ message: e.message || 'Error signing out', variant: 'error' });
                   }
                 }}>
-                <Text style={styles.logoutConfirmBtnText}>Log Out</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.logoutConfirmBtnText}>Log Out</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -906,8 +954,8 @@ export function ProfileScreen() {
 
             <View style={styles.sheetHeader}>
               <View>
-                <Text style={[styles.sheetTitle, { color: t.textPrimary }]}>About NearbyPay</Text>
-                <Text style={[styles.sheetSubtitle, { color: t.textSecondary }]}>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.sheetTitle, { color: t.textPrimary }]}>About NearbyPay</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.sheetSubtitle, { color: t.textSecondary }]}>
                   Next-generation contactless proximity payments
                 </Text>
               </View>
@@ -927,21 +975,21 @@ export function ProfileScreen() {
                   contentFit="contain"
                 />
               </View>
-              <Text style={[styles.aboutAppName, { color: t.textPrimary }]}>NearbyPay v2.4.0</Text>
-              <Text style={[styles.aboutAppTagline, { color: t.brand }]}>Nearby Payments That Just Work</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.aboutAppName, { color: t.textPrimary }]}>NearbyPay v2.4.0</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.aboutAppTagline, { color: t.brand }]}>Nearby Payments That Just Work</Text>
 
-              <Text style={[styles.aboutDescText, { color: t.textSecondary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.aboutDescText, { color: t.textSecondary }]}>
                 NearbyPay enables instantaneous, secure proximity payments between friends and local merchants,
                 combining Bluetooth Low Energy discovery with high-speed settlement infrastructure.
               </Text>
 
               <View style={[styles.hackathonBox, { backgroundColor: t.inputBg, borderColor: t.inputBorder }]}>
-                <Text style={[styles.hackathonHeader, { color: t.textSecondary }]}>DESIGNED &amp; BUILT BY</Text>
-                <Text style={[styles.hackathonName, { color: t.textPrimary }]}>Johnson Masebinu</Text>
-                <Text style={[styles.hackathonName, { color: t.textPrimary }]}>Onukwu Ifeanyichukwu Boluwatife</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.hackathonHeader, { color: t.textSecondary }]}>DESIGNED &amp; BUILT BY</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.hackathonName, { color: t.textPrimary }]}>Johnson Masebinu</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.hackathonName, { color: t.textPrimary }]}>Onukwu Ifeanyichukwu Boluwatife</Text>
               </View>
 
-              <Text style={[styles.aboutCopyright, { color: t.muted }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.aboutCopyright, { color: t.muted }]}>
                 © 2026 NearbyPay Inc. All rights reserved.
               </Text>
             </View>

@@ -14,7 +14,7 @@ import {
   ShieldCheckIcon,
   ViewIcon,
   ViewOffSlashIcon,
-} from '@hugeicons/core-free-icons';
+} from '@/lib/icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
@@ -118,7 +118,7 @@ export default function WalletScreen() {
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))}>
           <HugeiconsIcon icon={ArrowLeft01Icon} size={18} color={t.textPrimary} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: t.textPrimary }]}>Wallet</Text>
+        <Text maxFontSizeMultiplier={1.3} style={[styles.headerTitle, { color: t.textPrimary }]}>Wallet</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -149,10 +149,10 @@ export default function WalletScreen() {
 
           <View style={styles.balanceTopRow}>
             <View style={styles.balanceLabelGroup}>
-              <Text style={styles.balanceLabel}>Total Wallet Balance</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.balanceLabel}>Total Wallet Balance</Text>
               <View style={styles.liveIndicator}>
                 <View style={styles.liveDot} />
-                <Text style={styles.liveText}>Live</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.liveText}>Live</Text>
               </View>
             </View>
             <TouchableOpacity
@@ -168,7 +168,7 @@ export default function WalletScreen() {
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.balanceAmount}>
+          <Text maxFontSizeMultiplier={1.3} style={styles.balanceAmount}>
             {isBalanceVisible ? formattedBalance : '₦ ••••••••'}
           </Text>
 
@@ -179,7 +179,7 @@ export default function WalletScreen() {
               activeOpacity={0.85}
               onPress={() => setIsAddMoneyVisible(true)}>
               <HugeiconsIcon icon={ArrowDown01Icon} size={15} color="#101A5A" strokeWidth={2.4} />
-              <Text style={styles.walletActionTextPrimary}>Add Money</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.walletActionTextPrimary}>Add Money</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -187,7 +187,7 @@ export default function WalletScreen() {
               activeOpacity={0.85}
               onPress={() => router.push('/(tabs)/send')}>
               <HugeiconsIcon icon={Sent02Icon} size={15} color="#FFFFFF" strokeWidth={2.2} />
-              <Text style={styles.walletActionTextSecondary}>Send</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.walletActionTextSecondary}>Send</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -195,7 +195,7 @@ export default function WalletScreen() {
               activeOpacity={0.85}
               onPress={() => router.push('/(tabs)/receive')}>
               <HugeiconsIcon icon={QrCodeIcon} size={15} color="#FFFFFF" strokeWidth={2.2} />
-              <Text style={styles.walletActionTextSecondary}>QR Code</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.walletActionTextSecondary}>QR Code</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -207,22 +207,22 @@ export default function WalletScreen() {
               <HugeiconsIcon icon={BankIcon} size={18} color={t.brand} strokeWidth={2.2} />
             </View>
             <View style={styles.cardHeaderCopy}>
-              <Text style={[styles.cardTitle, { color: t.textPrimary }]}>Dedicated Deposit Nuban</Text>
-              <Text style={[styles.cardSubtitle, { color: t.textSecondary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.cardTitle, { color: t.textPrimary }]}>Dedicated Deposit Nuban</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.cardSubtitle, { color: t.textSecondary }]}>
                 {bankName}
               </Text>
             </View>
             <View style={[styles.statusBadgePill, { backgroundColor: t.successTint }]}>
               <HugeiconsIcon icon={CheckmarkBadge01Icon} size={12} color={t.success} strokeWidth={2.4} />
-              <Text style={[styles.statusBadgeText, { color: t.success }]}>Auto-Credit</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.statusBadgeText, { color: t.success }]}>Auto-Credit</Text>
             </View>
           </View>
 
           <View style={[styles.accountBox, { backgroundColor: t.inputBg, borderColor: t.inputBorder }]}>
             <View style={styles.accountNumberInfo}>
-              <Text style={[styles.accountNumberLabel, { color: t.muted }]}>ACCOUNT NUMBER</Text>
-              <Text style={[styles.accountNumberDigits, { color: t.textPrimary }]}>{formattedAccount}</Text>
-              <Text style={[styles.accountNameLine, { color: t.textSecondary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.accountNumberLabel, { color: t.muted }]}>ACCOUNT NUMBER</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.accountNumberDigits, { color: t.textPrimary }]}>{formattedAccount}</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.accountNameLine, { color: t.textSecondary }]}>
                 {profile.name.toUpperCase()} / NEARBYPAY
               </Text>
             </View>
@@ -232,7 +232,7 @@ export default function WalletScreen() {
               activeOpacity={0.85}
               onPress={copyAccountNumber}>
               <HugeiconsIcon icon={Copy01Icon} size={14} color="#FFFFFF" strokeWidth={2.2} />
-              <Text style={styles.accountCopyBtnText}>Copy</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.accountCopyBtnText}>Copy</Text>
             </TouchableOpacity>
           </View>
 
@@ -241,7 +241,7 @@ export default function WalletScreen() {
             activeOpacity={0.85}
             onPress={() => setIsAddMoneyVisible(true)}>
             <HugeiconsIcon icon={FlashIcon} size={16} color={t.brand} strokeWidth={2.2} />
-            <Text style={[styles.fundNowBtnText, { color: t.brand }]}>Simulate Instant Top-Up</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.fundNowBtnText, { color: t.brand }]}>Simulate Instant Top-Up</Text>
             <HugeiconsIcon icon={ArrowRight01Icon} size={15} color={t.brand} strokeWidth={2.4} />
           </TouchableOpacity>
         </View>
@@ -253,28 +253,28 @@ export default function WalletScreen() {
               <HugeiconsIcon icon={Coins01Icon} size={18} color={t.warning} strokeWidth={2.2} />
             </View>
             <View style={styles.cardHeaderCopy}>
-              <Text style={[styles.cardTitle, { color: t.textPrimary }]}>Commission & Rewards</Text>
-              <Text style={[styles.cardSubtitle, { color: t.textSecondary }]}>Earn 1 point per ₦100 sent or check-in</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.cardTitle, { color: t.textPrimary }]}>Commission & Rewards</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.cardSubtitle, { color: t.textSecondary }]}>Earn 1 point per ₦100 sent or check-in</Text>
             </View>
           </View>
 
           <View style={styles.pointsStatsRow}>
             <View style={styles.pointsStat}>
-              <Text style={[styles.pointsValue, { color: t.textPrimary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.pointsValue, { color: t.textPrimary }]}>
                 {commissionPoints.toLocaleString()}
               </Text>
-              <Text style={[styles.pointsStatLabel, { color: t.textSecondary }]}>Earned Points</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.pointsStatLabel, { color: t.textSecondary }]}>Earned Points</Text>
             </View>
             <View style={[styles.pointsDivider, { backgroundColor: t.divider }]} />
             <View style={styles.pointsStat}>
-              <Text style={[styles.pointsValue, { color: t.brand }]}>{pointsValue}</Text>
-              <Text style={[styles.pointsStatLabel, { color: t.textSecondary }]}>Redeemable Value</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.pointsValue, { color: t.brand }]}>{pointsValue}</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.pointsStatLabel, { color: t.textSecondary }]}>Redeemable Value</Text>
             </View>
           </View>
 
           <View style={styles.pointsFooter}>
             <HugeiconsIcon icon={InformationCircleIcon} size={13} color={t.muted} />
-            <Text style={[styles.pointsFooterText, { color: t.muted }]}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.pointsFooterText, { color: t.muted }]}>
               Points can be converted 1:1 to wallet funds anytime.
             </Text>
           </View>
@@ -283,11 +283,11 @@ export default function WalletScreen() {
         {/* ─── Recent Real Activity ─────────────────────────────── */}
         <View style={styles.activitySection}>
           <View style={styles.activityHeadingRow}>
-            <Text style={[styles.activitySectionTitle, { color: t.textPrimary }]}>Recent Activity</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.activitySectionTitle, { color: t.textPrimary }]}>Recent Activity</Text>
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => router.push('/(tabs)/history')}>
-              <Text style={[styles.seeAllText, { color: t.brand }]}>See all</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.seeAllText, { color: t.brand }]}>See all</Text>
             </TouchableOpacity>
           </View>
 
@@ -296,8 +296,8 @@ export default function WalletScreen() {
               <View style={[styles.emptyIconCircle, { backgroundColor: t.brandTint }]}>
                 <HugeiconsIcon icon={ShieldCheckIcon} size={24} color={t.brand} />
               </View>
-              <Text style={[styles.emptyTitle, { color: t.textPrimary }]}>No transactions yet</Text>
-              <Text style={[styles.emptySubtitle, { color: t.textSecondary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.emptyTitle, { color: t.textPrimary }]}>No transactions yet</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.emptySubtitle, { color: t.textSecondary }]}>
                 Add money to your account to start making transfers and earning rewards.
               </Text>
               <TouchableOpacity
@@ -305,7 +305,7 @@ export default function WalletScreen() {
                 activeOpacity={0.85}
                 onPress={() => setIsAddMoneyVisible(true)}>
                 <HugeiconsIcon icon={ArrowDown01Icon} size={15} color="#FFFFFF" strokeWidth={2.4} />
-                <Text style={styles.emptyActionBtnText}>Add Money Now</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.emptyActionBtnText}>Add Money Now</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -333,15 +333,15 @@ export default function WalletScreen() {
                       />
                     </View>
                     <View style={styles.activityInfoCol}>
-                      <Text style={[styles.activityTitleText, { color: t.textPrimary }]} numberOfLines={1}>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.activityTitleText, { color: t.textPrimary }]} numberOfLines={1}>
                         {tx.title}
                       </Text>
-                      <Text style={[styles.activityDateText, { color: t.muted }]}>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.activityDateText, { color: t.muted }]}>
                         {formatTxDate(tx.created_at)} • {tx.channel || 'NearbyPay'}
                       </Text>
                     </View>
                     <View style={styles.activityAmountCol}>
-                      <Text
+                      <Text maxFontSizeMultiplier={1.3}
                         style={[
                           styles.activityAmountText,
                           { color: isCredit ? t.success : t.textPrimary },
@@ -349,7 +349,7 @@ export default function WalletScreen() {
                         {isCredit ? '+' : '-'}₦{tx.amount.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </Text>
                       <View style={[styles.activityStatusPill, { backgroundColor: t.successTint }]}>
-                        <Text style={[styles.activityStatusText, { color: t.success }]}>
+                        <Text maxFontSizeMultiplier={1.3} style={[styles.activityStatusText, { color: t.success }]}>
                           {tx.status}
                         </Text>
                       </View>

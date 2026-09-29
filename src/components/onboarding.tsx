@@ -1,4 +1,4 @@
-import { Moon02Icon, Sun03Icon } from '@hugeicons/core-free-icons';
+import { Moon02Icon, Sun03Icon } from '@/lib/icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
@@ -132,12 +132,12 @@ export function Onboarding({ onFinish }: OnboardingProps) {
         {/* Content & Typography */}
         <View style={styles.textContainer}>
           <View style={[styles.badgeChip, { backgroundColor: t.brandTint }]}>
-            <Text style={[styles.badgeText, { color: t.brand }]}>{item.badge}</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.badgeText, { color: t.brand }]}>{item.badge}</Text>
           </View>
 
-          <Text style={[styles.title, { color: t.textPrimary }]}>{item.title}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={[styles.title, { color: t.textPrimary }]}>{item.title}</Text>
 
-          <Text style={[styles.description, { color: t.textSecondary }]}>{item.description}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={[styles.description, { color: t.textSecondary }]}>{item.description}</Text>
         </View>
       </View>
     );
@@ -166,7 +166,7 @@ export function Onboarding({ onFinish }: OnboardingProps) {
             contentFit="contain"
             accessibilityLabel="NearbyPay Logo"
           />
-          <Text style={[styles.brandName, { color: t.textPrimary }]}>NearbyPay</Text>
+          <Text maxFontSizeMultiplier={1.3} style={[styles.brandName, { color: t.textPrimary }]}>NearbyPay</Text>
         </View>
 
         <View style={styles.topRightActions}>
@@ -183,7 +183,7 @@ export function Onboarding({ onFinish }: OnboardingProps) {
               onPress={handleSkip}
               hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
               style={[styles.skipButton, { backgroundColor: t.chipBg }]}>
-              <Text style={[styles.skipText, { color: t.textSecondary }]}>Skip</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.skipText, { color: t.textSecondary }]}>Skip</Text>
             </TouchableOpacity>
           ) : (
             <View style={styles.skipPlaceholder} />
@@ -241,10 +241,10 @@ export function Onboarding({ onFinish }: OnboardingProps) {
           style={[styles.primaryButton, { backgroundColor: t.brand, shadowColor: t.brand }]}
           onPress={handleNext}
           activeOpacity={0.88}>
-          <Text style={styles.primaryButtonText}>
+          <Text maxFontSizeMultiplier={1.3} style={styles.primaryButtonText}>
             {isLastSlide ? 'Get Started' : 'Continue'}
           </Text>
-          <Text style={styles.buttonArrow}>→</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.buttonArrow}>→</Text>
         </TouchableOpacity>
       </View>
     </View>

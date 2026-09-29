@@ -11,9 +11,10 @@ import {
   ShieldKeyIcon,
   TelegramIcon,
   WhatsappIcon,
-} from '@hugeicons/core-free-icons';
+} from '@/lib/icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as Clipboard from 'expo-clipboard';
+import * as Linking from 'expo-linking';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { useRouter } from 'expo-router';
@@ -23,6 +24,7 @@ import {
   Image,
   Platform,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -53,7 +55,7 @@ export function ReceiveScreen() {
   const cleanTag = (profile.tag || 'user').trim().replace(/^[@$]/, '');
   const [receiveQr, setReceiveQr] = useState<{ tag: string; payload: string } | null>(null);
   const [isSavingQr, setIsSavingQr] = useState(false);
-  const qrShotRef = useRef<View>(null);
+  const qrExportRef = useRef<View>(null);
   const isQrReady = hasContactlessCode && receiveQr?.tag === cleanTag;
 
   useEffect(() => {
@@ -78,12 +80,94 @@ export function ReceiveScreen() {
     show({ message: `${label} copied to clipboard!`, variant: 'success' });
   };
 
+  // Pre-filled share text. The 8-digit contactless code is intentionally left
+  // blank — the user types it into the chat app themselves, the app never
+  // auto-shares the secret.
+  const buildShareMessage = () => {
+    const lines = [
+      'Here is my NearbyPay cashtag! 💸',
+      '',
+      `Cashtag: @${cleanTag}`,
+      `Name: ${profile.name}`,
+      '',
+      'To pay me:',
+      '1. Open NearbyPay → Send → To Nearby Tag',
+      '2. Enter my cashtag and the amount',
+      `3. Enter my 8-digit code when asked (ask me for it)`,
+      '',
+      'My code: ',
+    ];
+    return lines.join('\n');
+  };
+
+  const fallbackSystemShare = async (message: string) => {
+    try {
+      await Share.share({ message });
+    } catch {
+      show({ message: 'Could not open share options.', variant: 'error' });
+    }
+  };
+
+  const shareViaWhatsApp = async () => {
+    tap();
+    const message = buildShareMessage();
+    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    try {
+      const canOpen = await Linking.canOpenURL(url);
+      if (!canOpen) {
+        await fallbackSystemShare(message);
+        return;
+      }
+      await Linking.openURL(url);
+    } catch {
+      show({ message: 'Could not open WhatsApp. Is it installed?', variant: 'error' });
+    }
+  };
+
+  const shareViaTelegram = async () => {
+    tap();
+    const message = buildShareMessage();
+    const url = `https://t.me/share/url?url=${encodeURIComponent('')}&text=${encodeURIComponent(message)}`;
+    try {
+      const canOpen = await Linking.canOpenURL(url);
+      if (!canOpen) {
+        await fallbackSystemShare(message);
+        return;
+      }
+      await Linking.openURL(url);
+    } catch {
+      show({ message: 'Could not open Telegram. Is it installed?', variant: 'error' });
+    }
+  };
+
+  const shareViaSms = async () => {
+    tap();
+    const message = buildShareMessage();
+    const separator = Platform.OS === 'ios' ? '&' : '?';
+    const url = `sms:${separator}body=${encodeURIComponent(message)}`;
+    try {
+      const canOpen = await Linking.canOpenURL(url);
+      if (!canOpen) {
+        await fallbackSystemShare(message);
+        return;
+      }
+      await Linking.openURL(url);
+    } catch {
+      show({ message: 'Could not open Messages.', variant: 'error' });
+    }
+  };
+
+  const shareViaMore = async () => {
+    tap();
+    await fallbackSystemShare(buildShareMessage());
+  };
+
   const handleDownloadQr = async () => {
-    if (isSavingQr || !isQrReady) return;
+    if (isSavingQr || !isQrReady || !receiveQr) return;
     thud();
     setIsSavingQr(true);
     try {
-      const uri = await captureRef(qrShotRef, {
+      const uri = await captureRef(qrExportRef, {
         format: 'png',
         quality: 1,
         result: 'tmpfile',
@@ -122,7 +206,7 @@ export function ReceiveScreen() {
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))}>
           <HugeiconsIcon icon={ArrowLeft01Icon} size={18} color={t.textPrimary} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: t.textPrimary }]}>Receive Money</Text>
+        <Text maxFontSizeMultiplier={1.3} style={[styles.headerTitle, { color: t.textPrimary }]}>Receive Money</Text>
         <View style={{ width: 38 }} />
       </View>
 
@@ -139,6 +223,9 @@ export function ReceiveScreen() {
             <Rect width="100%" height="100%" rx={24} fill="url(#qrGrad)" />
           </Svg>
 
+          {/* Captured into the downloadable PNG: solid brand background so the
+              white logo/text stays visible in any gallery viewer */}
+          <View ref={qrExportRef} collapsable={false} style={styles.qrShotCard}>
           {/* Logo & Header */}
           <View style={styles.qrHeader}>
             <View style={styles.logoRow}>
@@ -147,9 +234,9 @@ export function ReceiveScreen() {
                 style={styles.logoMark}
                 resizeMode="contain"
               />
-              <Text style={styles.logoText}>NearbyPay</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.logoText}>NearbyPay</Text>
             </View>
-            <Text style={styles.qrSubtitle}>
+            <Text maxFontSizeMultiplier={1.3} style={styles.qrSubtitle}>
               {hasContactlessCode
                 ? `Scan this QR code with NearbyPay to send to @${cleanTag}`
                 : `Set up your security code to reveal your personal receive QR`}
@@ -163,28 +250,41 @@ export function ReceiveScreen() {
               style={styles.badgeAvatar}
             />
             <View>
-              <Text style={styles.badgeName}>{profile.name}</Text>
-              <Text style={styles.badgeTag}>@{cleanTag}</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.badgeName}>{profile.name}</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.badgeTag}>@{cleanTag}</Text>
             </View>
           </View>
 
           {/* QR Code Container */}
           <View style={[styles.qrContainer, !hasContactlessCode && styles.qrContainerSetup]}>
             {hasContactlessCode && receiveQr?.tag === cleanTag ? (
-              <View ref={qrShotRef} collapsable={false} style={styles.qrSquare}>
-                <QRCodeView value={receiveQr.payload} size={170} color="#0F172A" />
+              <View collapsable={false} style={styles.qrSquare}>
+                <View style={styles.qrWithLogo}>
+                  <QRCodeView
+                    value={receiveQr.payload}
+                    size={170}
+                    color="#0F172A"
+                    backgroundColor="#FFFFFF"
+                  />
+                  <View style={styles.qrCenterBadge}>
+                    <Image
+                      source={require('@/assets/images/logo/icon-1024.png')}
+                      style={styles.qrCenterMark}
+                    />
+                  </View>
+                </View>
               </View>
             ) : hasContactlessCode ? (
               <View style={styles.qrSquare}>
                 <ActivityIndicator color={GRADIENT_STOPS.from} size="small" />
-                <Text style={styles.qrSetupLoadingText}>Preparing secure QR...</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.qrSetupLoadingText}>Preparing secure QR...</Text>
               </View>
             ) : (
               <View style={styles.qrSetupCard}>
                 {/* Security Badge Pill */}
                 <View style={styles.setupBadgePill}>
                   <HugeiconsIcon icon={ShieldKeyIcon} size={13} color="#2563EB" strokeWidth={2.4} />
-                  <Text style={styles.setupBadgeText}>ONE-TIME SECURITY ACTIVATION</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={styles.setupBadgeText}>ONE-TIME SECURITY ACTIVATION</Text>
                 </View>
 
                 {/* Icon Circle */}
@@ -193,8 +293,8 @@ export function ReceiveScreen() {
                 </View>
 
                 {/* Title & Subtitle */}
-                <Text style={styles.setupTitle}>Protect Your Receive QR</Text>
-                <Text style={styles.setupSubtitle}>
+                <Text maxFontSizeMultiplier={1.3} style={styles.setupTitle}>Protect Your Receive QR</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.setupSubtitle}>
                   Set an 8-digit contactless PIN to safeguard offline transfers and unlock your instant payment QR code.
                 </Text>
 
@@ -202,11 +302,11 @@ export function ReceiveScreen() {
                 <View style={styles.setupBenefitsRow}>
                   <View style={styles.setupBenefitChip}>
                     <HugeiconsIcon icon={CheckmarkBadge01Icon} size={13} color="#16A34A" strokeWidth={2.2} />
-                    <Text style={styles.setupBenefitText}>Offline Protection</Text>
+                    <Text maxFontSizeMultiplier={1.3} style={styles.setupBenefitText}>Offline Protection</Text>
                   </View>
                   <View style={styles.setupBenefitChip}>
                     <HugeiconsIcon icon={CheckmarkBadge01Icon} size={13} color="#16A34A" strokeWidth={2.2} />
-                    <Text style={styles.setupBenefitText}>Instant Receive</Text>
+                    <Text maxFontSizeMultiplier={1.3} style={styles.setupBenefitText}>Instant Receive</Text>
                   </View>
                 </View>
 
@@ -216,13 +316,14 @@ export function ReceiveScreen() {
                   activeOpacity={0.85}
                   onPress={() => setContactlessSheetVisible(true)}>
                   <HugeiconsIcon icon={LockPasswordIcon} size={16} color="#FFFFFF" strokeWidth={2.2} />
-                  <Text style={styles.setupActionBtnText}>Set Up 8-Digit PIN</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={styles.setupActionBtnText}>Set Up 8-Digit PIN</Text>
                   <HugeiconsIcon icon={ArrowRight01Icon} size={15} color="#FFFFFF" strokeWidth={2.4} />
                 </TouchableOpacity>
 
-                <Text style={styles.setupFootnote}>Takes ~30 seconds • Bank-grade PIN protection</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.setupFootnote}>Takes ~30 seconds • Bank-grade PIN protection</Text>
               </View>
             )}
+          </View>
           </View>
 
           {/* Card Action Buttons */}
@@ -232,7 +333,7 @@ export function ReceiveScreen() {
               activeOpacity={0.85}
               onPress={() => copyToClipboard(`@${cleanTag}`, 'Cashtag')}>
               <HugeiconsIcon icon={Copy01Icon} size={16} color="#101A5A" />
-              <Text style={styles.cardActionTextPrimary}>Copy Cashtag</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.cardActionTextPrimary}>Copy Cashtag</Text>
             </TouchableOpacity>
 
             {/* Solid white so it stays visible on the blue gradient in both themes */}
@@ -246,7 +347,7 @@ export function ReceiveScreen() {
               ) : (
                 <>
                   <HugeiconsIcon icon={Download01Icon} size={16} color="#101A5A" />
-                  <Text style={styles.cardActionTextPrimary}>Download QR</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={styles.cardActionTextPrimary}>Download QR</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -254,10 +355,10 @@ export function ReceiveScreen() {
         </View>
 
         {/* Your Link Section */}
-        {/* <Text style={[styles.sectionLabel, { color: t.textPrimary }]}>Your Cashtag Link</Text>
+        {/* <Text maxFontSizeMultiplier={1.3} style={[styles.sectionLabel, { color: t.textPrimary }]}>Your Cashtag Link</Text>
         <View style={[styles.linkBox, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
           <HugeiconsIcon icon={Link01Icon} size={18} color={t.brand} />
-          <Text style={[styles.linkText, { color: t.textPrimary, fontFamily: 'Montserrat_600SemiBold' }]} numberOfLines={1}>
+          <Text maxFontSizeMultiplier={1.3} style={[styles.linkText, { color: t.textPrimary, fontFamily: 'Montserrat_600SemiBold' }]} numberOfLines={1}>
             {receiveLink}
           </Text>
           <TouchableOpacity
@@ -271,50 +372,50 @@ export function ReceiveScreen() {
         </View> */}
 
         {/* Quick Share Section */}
-        <Text style={[styles.sectionLabel, { color: t.textPrimary }]}>Quick Share</Text>
+        <Text maxFontSizeMultiplier={1.3} style={[styles.sectionLabel, { color: t.textPrimary }]}>Quick Share</Text>
         <View style={styles.quickShareRow}>
           {/* WhatsApp */}
           <TouchableOpacity
             style={styles.shareAppItem}
             activeOpacity={0.8}
-            onPress={() => show({ message: 'Opening WhatsApp...', variant: 'info' })}>
+            onPress={() => void shareViaWhatsApp()}>
             <View style={[styles.shareAppIcon, { backgroundColor: '#22C55E' }]}>
               <HugeiconsIcon icon={WhatsappIcon} size={24} color="#FFFFFF" />
             </View>
-            <Text style={[styles.shareAppName, { color: t.textPrimary }]}>WhatsApp</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.shareAppName, { color: t.textPrimary }]}>WhatsApp</Text>
           </TouchableOpacity>
 
           {/* Telegram */}
           <TouchableOpacity
             style={styles.shareAppItem}
             activeOpacity={0.8}
-            onPress={() => show({ message: 'Opening Telegram...', variant: 'info' })}>
+            onPress={() => void shareViaTelegram()}>
             <View style={[styles.shareAppIcon, { backgroundColor: '#38BDF8' }]}>
               <HugeiconsIcon icon={TelegramIcon} size={24} color="#FFFFFF" />
             </View>
-            <Text style={[styles.shareAppName, { color: t.textPrimary }]}>Telegram</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.shareAppName, { color: t.textPrimary }]}>Telegram</Text>
           </TouchableOpacity>
 
           {/* Messages */}
           <TouchableOpacity
             style={styles.shareAppItem}
             activeOpacity={0.8}
-            onPress={() => show({ message: 'Opening Messages...', variant: 'info' })}>
+            onPress={() => void shareViaSms()}>
             <View style={[styles.shareAppIcon, { backgroundColor: '#10B981' }]}>
               <HugeiconsIcon icon={BubbleChatIcon} size={24} color="#FFFFFF" />
             </View>
-            <Text style={[styles.shareAppName, { color: t.textPrimary }]}>Messages</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.shareAppName, { color: t.textPrimary }]}>Messages</Text>
           </TouchableOpacity>
 
           {/* More */}
           <TouchableOpacity
             style={styles.shareAppItem}
             activeOpacity={0.8}
-            onPress={() => show({ message: 'Opening more options...', variant: 'info' })}>
+            onPress={() => void shareViaMore()}>
             <View style={[styles.shareAppIcon, { backgroundColor: '#1E293B' }]}>
               <HugeiconsIcon icon={MoreHorizontalIcon} size={22} color="#FFFFFF" />
             </View>
-            <Text style={[styles.shareAppName, { color: t.textPrimary }]}>More</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.shareAppName, { color: t.textPrimary }]}>More</Text>
           </TouchableOpacity>
         </View>
 
@@ -328,8 +429,8 @@ export function ReceiveScreen() {
               <HugeiconsIcon icon={ShieldCheckIcon} size={20} color={t.brand} />
             </View>
             <View style={styles.infoTextWrap}>
-              <Text style={[styles.infoTitle, { color: t.textPrimary }]}>Receive Money</Text>
-              <Text style={[styles.infoSub, { color: t.textSecondary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.infoTitle, { color: t.textPrimary }]}>Receive Money</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.infoSub, { color: t.textSecondary }]}>
                 The sender can pay while you are offline. They need internet to complete settlement.
               </Text>
             </View>
@@ -348,11 +449,57 @@ export function ReceiveScreen() {
               strokeLinejoin="round"
             />
           </Svg>
-          <Text style={[styles.watermarkText, { color: t.textSecondary }]}>
+          <Text maxFontSizeMultiplier={1.3} style={[styles.watermarkText, { color: t.textSecondary }]}>
             NearbyPay Brings You Closer
           </Text>
         </View>
       </ScrollView>
+
+      {/* Hidden branded export card — captured for Download/Share, kept off-screen */}
+      {isQrReady && receiveQr ? (
+        <View style={styles.qrExportOffscreen} pointerEvents="none">
+          <View ref={qrExportRef} collapsable={false} style={styles.qrExportCard}>
+            <View style={styles.qrExportHeader}>
+              <Image
+                source={require('@/assets/images/logo/icon-1024.png')}
+                style={styles.qrExportLogo}
+              />
+              <View style={styles.qrExportBrandCol}>
+                <Text style={styles.qrExportBrand}>NearbyPay</Text>
+                <Text style={styles.qrExportEyebrow}>SCAN TO PAY</Text>
+              </View>
+            </View>
+
+            <View style={styles.qrExportQrWrap}>
+              <View style={styles.qrWithLogo}>
+                <QRCodeView
+                  value={receiveQr.payload}
+                  size={220}
+                  color="#0F172A"
+                  backgroundColor="#FFFFFF"
+                />
+                <View style={styles.qrExportCenterBadge}>
+                  <Image
+                    source={require('@/assets/images/logo/icon-1024.png')}
+                    style={styles.qrExportCenterMark}
+                  />
+                </View>
+              </View>
+            </View>
+
+            <Text style={styles.qrExportName} numberOfLines={1}>
+              {profile.name}
+            </Text>
+            <Text style={styles.qrExportTag} numberOfLines={1}>
+              @{cleanTag}
+            </Text>
+            <View style={styles.qrExportDivider} />
+            <Text style={styles.qrExportFootnote}>
+              Scan with NearbyPay to send money instantly
+            </Text>
+          </View>
+        </View>
+      ) : null}
       <ContactlessCodeSheet
         visible={contactlessSheetVisible}
         onClose={() => setContactlessSheetVisible(false)}
@@ -468,6 +615,13 @@ const styles = StyleSheet.create({
   qrContainerSetup: {
     width: '100%',
   },
+  qrShotCard: {
+    backgroundColor: GRADIENT_STOPS.from,
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+    width: '100%',
+  },
   qrSquare: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
@@ -480,6 +634,45 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 10,
     elevation: 4,
+  },
+  // QR + centered logo overlay (plain RN Image — reliable on Android,
+  // unlike SVG-embedded logos, and captured correctly by view-shot)
+  qrWithLogo: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qrCenterBadge: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  qrCenterMark: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+  },
+  qrExportCenterBadge: {
+    position: 'absolute',
+    width: 50,
+    height: 50,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  qrExportCenterMark: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
   },
   qrSetupLoadingText: {
     fontFamily: 'Montserrat_500Medium',
@@ -717,5 +910,82 @@ const styles = StyleSheet.create({
   watermarkText: {
     fontFamily: 'Montserrat_600SemiBold',
     fontSize: 12,
+  },
+  // Branded QR export (download/share) — clean white card, no transparency
+  qrExportOffscreen: {
+    position: 'absolute',
+    top: -10000,
+    left: -10000,
+    opacity: 1,
+  },
+  qrExportCard: {
+    width: 320,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 28,
+    paddingVertical: 28,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  qrExportHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 18,
+  },
+  qrExportLogo: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+  },
+  qrExportBrandCol: {
+    marginLeft: 10,
+    alignItems: 'flex-start',
+  },
+  qrExportBrand: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 18,
+    color: '#0F172A',
+    letterSpacing: -0.4,
+  },
+  qrExportEyebrow: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 9,
+    letterSpacing: 2.2,
+    color: '#2E45F4',
+    marginTop: 2,
+  },
+  qrExportQrWrap: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 12,
+    marginBottom: 16,
+  },
+  qrExportName: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 15,
+    color: '#0F172A',
+    textAlign: 'center',
+    maxWidth: 240,
+  },
+  qrExportTag: {
+    fontFamily: 'Montserrat_600SemiBold',
+    fontSize: 13,
+    color: '#2E45F4',
+    textAlign: 'center',
+    marginTop: 3,
+  },
+  qrExportDivider: {
+    width: 48,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: '#E2E8F0',
+    marginVertical: 12,
+  },
+  qrExportFootnote: {
+    fontFamily: 'Montserrat_500Medium',
+    fontSize: 10,
+    color: '#94A3B8',
+    textAlign: 'center',
   },
 });

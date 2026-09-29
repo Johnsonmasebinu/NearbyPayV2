@@ -7,7 +7,7 @@ import {
   ShieldCheckIcon,
   ViewIcon,
   ViewOffSlashIcon,
-} from '@hugeicons/core-free-icons';
+} from '@/lib/icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useState } from 'react';
 import {
@@ -103,17 +103,17 @@ export function ContactlessCodeSheet({ visible, onClose, onSuccess }: Contactles
     return (
       <View style={styles.fieldGroup}>
         <View style={styles.fieldHeader}>
-          <Text style={[styles.fieldLabel, { color: t.textSecondary }]}>{label}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={[styles.fieldLabel, { color: t.textSecondary }]}>{label}</Text>
           <View style={[styles.fieldBadge, isComplete && styles.fieldBadgeComplete]}>
             {isComplete ? (
               <HugeiconsIcon icon={CheckmarkCircle02Icon} size={11} color="#16A34A" strokeWidth={2.4} />
             ) : null}
-            <Text style={[styles.fieldBadgeText, isComplete && styles.fieldBadgeTextComplete]}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.fieldBadgeText, isComplete && styles.fieldBadgeTextComplete]}>
               {value.length}/8
             </Text>
           </View>
         </View>
-        <TextInput
+        <TextInput maxFontSizeMultiplier={1.3}
           style={[
             styles.codeInput,
             {
@@ -160,10 +160,10 @@ export function ContactlessCodeSheet({ visible, onClose, onSuccess }: Contactles
               <HugeiconsIcon icon={LockPasswordIcon} size={22} color={t.brand} strokeWidth={2.2} />
             </View>
             <View style={styles.headerText}>
-              <Text style={[styles.title, { color: t.textPrimary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.title, { color: t.textPrimary }]}>
                 {hasContactlessCode ? 'Change Security PIN' : 'Set Up Contactless PIN'}
               </Text>
-              <Text style={[styles.subtitle, { color: t.textSecondary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.subtitle, { color: t.textSecondary }]}>
                 {hasContactlessCode
                   ? 'Update your 8-digit security PIN.'
                   : '8-digit PIN to protect offline transfers & QR receives.'}
@@ -181,7 +181,7 @@ export function ContactlessCodeSheet({ visible, onClose, onSuccess }: Contactles
           {/* Value / Trust Callout */}
           <View style={[styles.infoBanner, { backgroundColor: t.brandTint, borderColor: t.brandTintStrong }]}>
             <HugeiconsIcon icon={ShieldCheckIcon} size={18} color={t.brand} strokeWidth={2.2} />
-            <Text style={[styles.infoBannerText, { color: t.textSecondary }]}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.infoBannerText, { color: t.textSecondary }]}>
               Your 8-digit PIN confirms your identity during offline tap-to-pay and keeps your receive QR protected from unauthorized transactions.
             </Text>
           </View>
@@ -203,7 +203,7 @@ export function ContactlessCodeSheet({ visible, onClose, onSuccess }: Contactles
               color={t.textSecondary}
               strokeWidth={2}
             />
-            <Text style={[styles.toggleText, { color: t.textSecondary }]}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.toggleText, { color: t.textSecondary }]}>
               {showCode ? 'Hide digits' : 'Show digits'}
             </Text>
           </TouchableOpacity>
@@ -212,7 +212,7 @@ export function ContactlessCodeSheet({ visible, onClose, onSuccess }: Contactles
           {error ? (
             <View style={styles.errorBanner}>
               <HugeiconsIcon icon={AlertCircleIcon} size={15} color="#DC2626" strokeWidth={2.2} />
-              <Text style={styles.errorText}>{error}</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.errorText}>{error}</Text>
             </View>
           ) : null}
 
@@ -227,7 +227,7 @@ export function ContactlessCodeSheet({ visible, onClose, onSuccess }: Contactles
             ) : (
               <View style={styles.saveButtonInner}>
                 <HugeiconsIcon icon={CheckmarkBadge01Icon} size={18} color="#FFFFFF" strokeWidth={2.2} />
-                <Text style={styles.saveButtonText}>
+                <Text maxFontSizeMultiplier={1.3} style={styles.saveButtonText}>
                   {hasContactlessCode ? 'Update Security PIN' : 'Save & Unlock Receive QR'}
                 </Text>
               </View>

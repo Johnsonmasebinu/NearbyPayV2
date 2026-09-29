@@ -66,7 +66,7 @@ export default function BottomSheet({
           },
         ]}>
         <View style={styles.handle} />
-        <Text style={styles.title}>{title}</Text>
+        <Text maxFontSizeMultiplier={1.3} style={styles.title}>{title}</Text>
         {children}
       </Animated.View>
     </View>

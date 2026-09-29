@@ -10,7 +10,7 @@ import {
   UserIcon,
   ViewIcon,
   ViewOffSlashIcon,
-} from '@hugeicons/core-free-icons';
+} from '@/lib/icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { useCallback, useEffect, useState } from 'react';
@@ -274,8 +274,8 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                     />
                   </View>
                   <View style={styles.brandTextCol}>
-                    <Text style={[styles.brandName, { color: textPrimary }]}>NearbyPay</Text>
-                    <Text style={[styles.brandTag, { color: textSecondary }]}>Send. Receive. Stay Close.</Text>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.brandName, { color: textPrimary }]}>NearbyPay</Text>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.brandTag, { color: textSecondary }]}>Send. Receive. Stay Close.</Text>
                   </View>
                 </View>
 
@@ -293,14 +293,14 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                     <ThemedText style={[styles.title, { textAlign: 'center', color: textPrimary }]}>
                       Verify your email
                     </ThemedText>
-                    <Text style={[styles.subtitle, { textAlign: 'center', color: textSecondary, marginTop: -4 }]}>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.subtitle, { textAlign: 'center', color: textSecondary, marginTop: -4 }]}>
                       We sent a verification link to your email address. Please click the link to confirm your account.
                     </Text>
 
                     {/* Email Pill Badge */}
                     <View style={[styles.emailPillCard, { backgroundColor: inputBg, borderColor: inputBorder }]}>
                       <HugeiconsIcon icon={Mail01Icon} size={16} color="#2B20F0" />
-                      <Text style={[styles.emailPillText, { color: textPrimary }]} numberOfLines={1}>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.emailPillText, { color: textPrimary }]} numberOfLines={1}>
                         {email.trim()}
                       </Text>
                     </View>
@@ -313,29 +313,29 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                         contentFit="contain"
                       />
                       <View style={styles.verifiedUserInfo}>
-                        <Text style={[styles.verifiedUserName, { color: textPrimary }]}>{fullName.trim()}</Text>
-                        <Text style={styles.verifiedUserTag}>@{username.trim().toLowerCase().replace(/^[@$]/, '')}</Text>
+                        <Text maxFontSizeMultiplier={1.3} style={[styles.verifiedUserName, { color: textPrimary }]}>{fullName.trim()}</Text>
+                        <Text maxFontSizeMultiplier={1.3} style={styles.verifiedUserTag}>@{username.trim().toLowerCase().replace(/^[@$]/, '')}</Text>
                       </View>
                     </View>
 
                     {/* Steps Helper Card */}
                     <View style={[styles.stepsGuideCard, { backgroundColor: inputBg, borderColor: inputBorder }]}>
-                      <Text style={[styles.stepsGuideTitle, { color: textPrimary }]}>Next steps:</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.stepsGuideTitle, { color: textPrimary }]}>Next steps:</Text>
                       <View style={styles.stepItemRow}>
-                        <Text style={styles.stepNumberBullet}>1.</Text>
-                        <Text style={[styles.stepItemText, { color: textSecondary }]}>
+                        <Text maxFontSizeMultiplier={1.3} style={styles.stepNumberBullet}>1.</Text>
+                        <Text maxFontSizeMultiplier={1.3} style={[styles.stepItemText, { color: textSecondary }]}>
                           Open the verification email in your inbox (or spam).
                         </Text>
                       </View>
                       <View style={styles.stepItemRow}>
-                        <Text style={styles.stepNumberBullet}>2.</Text>
-                        <Text style={[styles.stepItemText, { color: textSecondary }]}>
-                          Tap the <Text style={{ fontWeight: '700', color: textPrimary }}>Confirm Email</Text> link.
+                        <Text maxFontSizeMultiplier={1.3} style={styles.stepNumberBullet}>2.</Text>
+                        <Text maxFontSizeMultiplier={1.3} style={[styles.stepItemText, { color: textSecondary }]}>
+                          Tap the <Text maxFontSizeMultiplier={1.3} style={{ fontWeight: '700', color: textPrimary }}>Confirm Email</Text> link.
                         </Text>
                       </View>
                       <View style={styles.stepItemRow}>
-                        <Text style={styles.stepNumberBullet}>3.</Text>
-                        <Text style={[styles.stepItemText, { color: textSecondary }]}>
+                        <Text maxFontSizeMultiplier={1.3} style={styles.stepNumberBullet}>3.</Text>
+                        <Text maxFontSizeMultiplier={1.3} style={[styles.stepItemText, { color: textSecondary }]}>
                           Return to NearbyPay and sign in to get started.
                         </Text>
                       </View>
@@ -346,7 +346,7 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                       style={styles.primaryButton}
                       onPress={handleOpenEmailApp}
                       activeOpacity={0.88}>
-                      <Text style={styles.primaryButtonText}>Open Email App</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={styles.primaryButtonText}>Open Email App</Text>
                     </TouchableOpacity>
 
                     {/* Instant continue button */}
@@ -354,7 +354,7 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                       style={[styles.primaryButton, { backgroundColor: '#10B981', marginTop: 10 }]}
                       onPress={handleCheckConfirmed}
                       activeOpacity={0.88}>
-                      <Text style={styles.primaryButtonText}>Continue to My Account</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={styles.primaryButtonText}>Continue to My Account</Text>
                     </TouchableOpacity>
 
                     {/* Secondary action: Proceed to Sign In */}
@@ -362,12 +362,12 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                       style={[styles.secondarySignInBtn, { backgroundColor: inputBg, borderColor: inputBorder }]}
                       onPress={onGoToLogin}
                       activeOpacity={0.85}>
-                      <Text style={[styles.secondarySignInBtnText, { color: textPrimary }]}>Proceed to Sign In</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.secondarySignInBtnText, { color: textPrimary }]}>Proceed to Sign In</Text>
                     </TouchableOpacity>
 
                     {/* Resend Verification Email Section */}
                     <View style={styles.resendSection}>
-                      <Text style={[styles.resendPromptText, { color: textSecondary }]}>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.resendPromptText, { color: textSecondary }]}>
                         {"Didn't receive the email?"}
                       </Text>
                       <TouchableOpacity
@@ -384,7 +384,7 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                               size={14}
                               color={resendCooldown > 0 ? textSecondary : '#2B20F0'}
                             />
-                            <Text
+                            <Text maxFontSizeMultiplier={1.3}
                               style={[
                                 styles.resendBtnText,
                                 { color: resendCooldown > 0 ? textSecondary : '#2B20F0' },
@@ -404,7 +404,7 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                       }}
                       hitSlop={8}
                       style={styles.editEmailLinkTouch}>
-                      <Text style={styles.editEmailLinkText}>Wrong email? Tap here to edit</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={styles.editEmailLinkText}>Wrong email? Tap here to edit</Text>
                     </TouchableOpacity>
                   </View>
                 ) : (
@@ -421,7 +421,7 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                             ]}
                           />
                         </View>
-                        <Text style={[styles.stepBadgeText, { color: textSecondary }]}>
+                        <Text maxFontSizeMultiplier={1.3} style={[styles.stepBadgeText, { color: textSecondary }]}>
                           STEP {step} OF 2 • {step === 1 ? 'Profile & Cashtag' : 'Security & Login'}
                         </Text>
                       </View>
@@ -433,7 +433,7 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                           style={[styles.headerBackBtn, { backgroundColor: inputBg, borderColor: inputBorder }]}
                           accessibilityLabel="Go back to step 1">
                           <HugeiconsIcon icon={ArrowLeft01Icon} size={15} color={textPrimary} />
-                          <Text style={[styles.headerBackText, { color: textPrimary }]}>Back</Text>
+                          <Text maxFontSizeMultiplier={1.3} style={[styles.headerBackText, { color: textPrimary }]}>Back</Text>
                         </TouchableOpacity>
                       )}
                     </View>
@@ -441,7 +441,7 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                     {step === 1 ? (
                       <>
                         <ThemedText style={[styles.title, { color: textPrimary }]}>Create your account</ThemedText>
-                        <Text style={[styles.subtitle, { color: textSecondary }]}>
+                        <Text maxFontSizeMultiplier={1.3} style={[styles.subtitle, { color: textSecondary }]}>
                           Choose your profile avatar and unique NearbyPay Cashtag.
                         </Text>
 
@@ -463,19 +463,19 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                               </View>
                             </View>
                             <View style={styles.avatarCardInfo}>
-                              <Text style={[styles.avatarCardTitle, { color: textPrimary }]}>Profile Avatar</Text>
-                              <Text style={[styles.avatarCardSubtitle, { color: textSecondary }]}>
+                              <Text maxFontSizeMultiplier={1.3} style={[styles.avatarCardTitle, { color: textPrimary }]}>Profile Avatar</Text>
+                              <Text maxFontSizeMultiplier={1.3} style={[styles.avatarCardSubtitle, { color: textSecondary }]}>
                                 Tap to select memo or upload photo
                               </Text>
                             </View>
                           </View>
                           <View style={styles.changePill}>
-                            <Text style={styles.changePillText}>Change</Text>
+                            <Text maxFontSizeMultiplier={1.3} style={styles.changePillText}>Change</Text>
                           </View>
                         </TouchableOpacity>
 
                         <View style={styles.fieldGroup}>
-                          <Text style={[styles.label, { color: textPrimary }]}>Full name</Text>
+                          <Text maxFontSizeMultiplier={1.3} style={[styles.label, { color: textPrimary }]}>Full name</Text>
                           <View
                             style={[
                               styles.inputWrap,
@@ -485,7 +485,7 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                               },
                             ]}>
                             <HugeiconsIcon icon={UserIcon} size={18} color={iconColor} strokeWidth={1.8} />
-                            <TextInput
+                            <TextInput maxFontSizeMultiplier={1.3}
                               value={fullName}
                               onChangeText={handleFullNameChange}
                               placeholder="Alex Morgan"
@@ -502,14 +502,14 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
 
                         <View style={styles.fieldGroup}>
                           <View style={styles.labelRow}>
-                            <Text style={[styles.label, { color: textPrimary }]}>NearbyPay Cashtag</Text>
+                            <Text maxFontSizeMultiplier={1.3} style={[styles.label, { color: textPrimary }]}>NearbyPay Cashtag</Text>
                             <TouchableOpacity
                               onPress={() => generateSystemUsername(fullName)}
                               disabled={isGeneratingUsername}
                               hitSlop={6}
                               style={styles.shuffleRow}>
                               <HugeiconsIcon icon={SparklesIcon} size={13} color="#2B20F0" />
-                              <Text style={styles.shuffleText}>Shuffle</Text>
+                              <Text maxFontSizeMultiplier={1.3} style={styles.shuffleText}>Shuffle</Text>
                             </TouchableOpacity>
                           </View>
                           <View
@@ -520,8 +520,8 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                                 borderColor: focusedField === 'username' ? '#2B20F0' : inputBorder,
                               },
                             ]}>
-                            <Text style={styles.tagPrefix}>@</Text>
-                            <TextInput
+                            <Text maxFontSizeMultiplier={1.3} style={styles.tagPrefix}>@</Text>
+                            <TextInput maxFontSizeMultiplier={1.3}
                               value={username}
                               onChangeText={(val) => setUsername(val.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                               placeholder="alexmorgan24"
@@ -555,11 +555,11 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                                 { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5' },
                               ]}>
                               <HugeiconsIcon icon={Tick02Icon} size={11} color="#10B981" strokeWidth={3} />
-                              <Text style={[styles.statusBadgeText, { color: '#10B981' }]}>
+                              <Text maxFontSizeMultiplier={1.3} style={[styles.statusBadgeText, { color: '#10B981' }]}>
                                 System-Generated & Unique
                               </Text>
                             </View>
-                            <Text style={[styles.usernameHint, { color: textSecondary }]}>Nearby cashtag</Text>
+                            <Text maxFontSizeMultiplier={1.3} style={[styles.usernameHint, { color: textSecondary }]}>Nearby cashtag</Text>
                           </View>
                         </View>
 
@@ -568,18 +568,18 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                           style={styles.primaryButton}
                           onPress={handleContinue}
                           activeOpacity={0.88}>
-                          <Text style={styles.primaryButtonText}>Continue</Text>
+                          <Text maxFontSizeMultiplier={1.3} style={styles.primaryButtonText}>Continue</Text>
                         </TouchableOpacity>
                       </>
                     ) : (
                       <>
                         <ThemedText style={[styles.title, { color: textPrimary }]}>Secure your account</ThemedText>
-                        <Text style={[styles.subtitle, { color: textSecondary }]}>
+                        <Text maxFontSizeMultiplier={1.3} style={[styles.subtitle, { color: textSecondary }]}>
                           Enter your email and create a password for @{username || 'account'}.
                         </Text>
 
                         <View style={styles.fieldGroup}>
-                          <Text style={[styles.label, { color: textPrimary }]}>Email address</Text>
+                          <Text maxFontSizeMultiplier={1.3} style={[styles.label, { color: textPrimary }]}>Email address</Text>
                           <View
                             style={[
                               styles.inputWrap,
@@ -589,7 +589,7 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                               },
                             ]}>
                             <HugeiconsIcon icon={Mail01Icon} size={18} color={iconColor} strokeWidth={1.8} />
-                            <TextInput
+                            <TextInput maxFontSizeMultiplier={1.3}
                               value={email}
                               onChangeText={setEmail}
                               placeholder="name@email.com"
@@ -608,7 +608,7 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                         </View>
 
                         <View style={styles.fieldGroup}>
-                          <Text style={[styles.label, { color: textPrimary }]}>Password</Text>
+                          <Text maxFontSizeMultiplier={1.3} style={[styles.label, { color: textPrimary }]}>Password</Text>
                           <View
                             style={[
                               styles.inputWrap,
@@ -618,7 +618,7 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                               },
                             ]}>
                             <HugeiconsIcon icon={LockPasswordIcon} size={18} color={iconColor} strokeWidth={1.8} />
-                            <TextInput
+                            <TextInput maxFontSizeMultiplier={1.3}
                               value={password}
                               onChangeText={setPassword}
                               placeholder="Create a password (min 6 chars)"
@@ -646,7 +646,7 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                         </View>
 
                         <View style={styles.fieldGroup}>
-                          <Text style={[styles.label, { color: textPrimary }]}>Confirm password</Text>
+                          <Text maxFontSizeMultiplier={1.3} style={[styles.label, { color: textPrimary }]}>Confirm password</Text>
                           <View
                             style={[
                               styles.inputWrap,
@@ -656,7 +656,7 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                               },
                             ]}>
                             <HugeiconsIcon icon={LockPasswordIcon} size={18} color={iconColor} strokeWidth={1.8} />
-                            <TextInput
+                            <TextInput maxFontSizeMultiplier={1.3}
                               value={confirmPassword}
                               onChangeText={setConfirmPassword}
                               placeholder="Repeat your password"
@@ -692,7 +692,7 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                           {isSubmitting ? (
                             <ActivityIndicator size="small" color="#FFFFFF" />
                           ) : (
-                            <Text style={styles.primaryButtonText}>Create account</Text>
+                            <Text maxFontSizeMultiplier={1.3} style={styles.primaryButtonText}>Create account</Text>
                           )}
                         </TouchableOpacity>
 
@@ -702,21 +702,21 @@ export function SignupScreen({ onCreateAccount, onGoToLogin }: SignupScreenProps
                           disabled={isSubmitting}
                           activeOpacity={0.8}>
                           <HugeiconsIcon icon={ArrowLeft01Icon} size={16} color={textPrimary} />
-                          <Text style={[styles.secondaryBackButtonText, { color: textPrimary }]}>Go back</Text>
+                          <Text maxFontSizeMultiplier={1.3} style={[styles.secondaryBackButtonText, { color: textPrimary }]}>Go back</Text>
                         </TouchableOpacity>
                       </>
                     )}
 
                     <View style={styles.dividerRow}>
                       <View style={[styles.dividerLine, { backgroundColor: cardBorder }]} />
-                      <Text style={[styles.dividerText, { color: textSecondary }]}>secure signup</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.dividerText, { color: textSecondary }]}>secure signup</Text>
                       <View style={[styles.dividerLine, { backgroundColor: cardBorder }]} />
                     </View>
 
                     <View style={styles.footerRow}>
-                      <Text style={[styles.footerText, { color: textSecondary }]}>Already have an account?</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.footerText, { color: textSecondary }]}>Already have an account?</Text>
                       <TouchableOpacity onPress={onGoToLogin} hitSlop={8}>
-                        <Text style={styles.linkText}>Sign in</Text>
+                        <Text maxFontSizeMultiplier={1.3} style={styles.linkText}>Sign in</Text>
                       </TouchableOpacity>
                     </View>
                   </View>

@@ -1,4 +1,4 @@
-import { Mail01Icon, CheckmarkCircle02Icon } from '@hugeicons/core-free-icons';
+import { Mail01Icon, CheckmarkCircle02Icon } from '@/lib/icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useState } from 'react';
 import {
@@ -97,8 +97,8 @@ export function ForgotPasswordScreen({ onResetPassword, onBackToLogin }: ForgotP
                     />
                   </View>
                   <View style={styles.brandTextCol}>
-                    <Text style={[styles.brandName, { color: textPrimary }]}>NearbyPay</Text>
-                    <Text style={[styles.brandTag, { color: textSecondary }]}>Send. Receive. Stay Close.</Text>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.brandName, { color: textPrimary }]}>NearbyPay</Text>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.brandTag, { color: textSecondary }]}>Send. Receive. Stay Close.</Text>
                   </View>
                 </View>
 
@@ -108,30 +108,30 @@ export function ForgotPasswordScreen({ onResetPassword, onBackToLogin }: ForgotP
                       <HugeiconsIcon icon={CheckmarkCircle02Icon} size={48} color="#10B981" />
                     </View>
                     <ThemedText style={[styles.title, { textAlign: 'center', color: textPrimary }]}>Check your inbox</ThemedText>
-                    <Text style={[styles.subtitle, { textAlign: 'center', color: textSecondary, marginTop: -4 }]}>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.subtitle, { textAlign: 'center', color: textSecondary, marginTop: -4 }]}>
                       {"We've sent a password reset link to\n"}
-                      <Text style={{ fontWeight: '700', color: textPrimary }}>{email.trim()}</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={{ fontWeight: '700', color: textPrimary }}>{email.trim()}</Text>
                     </Text>
                     <TouchableOpacity style={styles.primaryButton} onPress={onBackToLogin} activeOpacity={0.88}>
-                      <Text style={styles.primaryButtonText}>Back to Sign In</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={styles.primaryButtonText}>Back to Sign In</Text>
                     </TouchableOpacity>
                   </View>
                 ) : (
                   <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
                     <ThemedText style={[styles.title, { color: textPrimary }]}>Reset your password</ThemedText>
-                    <Text style={[styles.subtitle, { color: textSecondary }]}>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.subtitle, { color: textSecondary }]}>
                       Enter your email to receive a secure reset link.
                     </Text>
 
                     <View style={styles.fieldGroup}>
-                      <Text style={[styles.label, { color: textPrimary }]}>Email</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.label, { color: textPrimary }]}>Email</Text>
                       <View
                         style={[
                           styles.inputWrap,
                           { backgroundColor: inputBg, borderColor: focused ? '#2B20F0' : inputBorder },
                         ]}>
                         <HugeiconsIcon icon={Mail01Icon} size={18} color={iconColor} strokeWidth={1.8} />
-                        <TextInput
+                        <TextInput maxFontSizeMultiplier={1.3}
                           value={email}
                           onChangeText={setEmail}
                           placeholder="name@email.com"
@@ -158,18 +158,18 @@ export function ForgotPasswordScreen({ onResetPassword, onBackToLogin }: ForgotP
                       {isSubmitting ? (
                         <ActivityIndicator size="small" color="#FFFFFF" />
                       ) : (
-                        <Text style={styles.primaryButtonText}>Send reset link</Text>
+                        <Text maxFontSizeMultiplier={1.3} style={styles.primaryButtonText}>Send reset link</Text>
                       )}
                     </TouchableOpacity>
 
                     <View style={styles.dividerRow}>
                       <View style={[styles.dividerLine, { backgroundColor: cardBorder }]} />
-                      <Text style={[styles.dividerText, { color: textSecondary }]}>secure reset</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.dividerText, { color: textSecondary }]}>secure reset</Text>
                       <View style={[styles.dividerLine, { backgroundColor: cardBorder }]} />
                     </View>
 
                     <TouchableOpacity onPress={onBackToLogin} hitSlop={8}>
-                      <Text style={styles.backText}>Back to sign in</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={styles.backText}>Back to sign in</Text>
                     </TouchableOpacity>
                   </View>
                 )}

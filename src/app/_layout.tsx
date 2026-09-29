@@ -1,4 +1,5 @@
 import { Montserrat_400Regular, Montserrat_500Medium, Montserrat_600SemiBold, Montserrat_700Bold, useFonts } from '@expo-google-fonts/montserrat';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DarkTheme, DefaultTheme, ThemeProvider, Stack, usePathname } from 'expo-router';
 import { NavigationBar } from 'expo-navigation-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -11,7 +12,7 @@ import { getAppTheme } from '@/constants/app-theme';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { ForgotPasswordScreen } from '@/components/auth/forgot-password-screen';
-import { LoginScreen } from '@/components/auth/login-screen';
+import { NotificationsProvider } from '@/hooks/notifications-provider';import { LoginScreen } from '@/components/auth/login-screen';
 import { SignupScreen } from '@/components/auth/signup-screen';
 import { Onboarding } from '@/components/onboarding';
 import { PinSheet } from '@/components/ui/pin-sheet';
@@ -23,6 +24,8 @@ import { UserProfileProvider } from '@/hooks/user-profile-provider';
 SplashScreen.preventAutoHideAsync();
 
 type AuthView = 'login' | 'signup' | 'forgot-password';
+
+const ONBOARDING_DONE_KEY = '@nearbypay:onboardingDone';
 
 /**
  * Single source of truth for the status bar inside the authenticated app.
@@ -53,6 +56,7 @@ function RootShell() {
   const { isDark } = useAppTheme();
   const { session, isLoading: authLoading, hasPin } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(true);
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [authView, setAuthView] = useState<AuthView>('login');
   const [pinSheetDismissed, setPinSheetDismissed] = useState(false);
 
@@ -74,7 +78,29 @@ function RootShell() {
     Montserrat_700Bold,
   });
 
-  if (!fontsLoaded || authLoading) {
+  // Onboarding shows once ever — persisted so restarts go straight to login/home.
+  useEffect(() => {
+    let isActive = true;
+    void AsyncStorage.getItem(ONBOARDING_DONE_KEY)
+      .then((value) => {
+        if (!isActive) return;
+        if (value === 'true') setShowOnboarding(false);
+        setOnboardingChecked(true);
+      })
+      .catch(() => {
+        if (isActive) setOnboardingChecked(true);
+      });
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const finishOnboarding = () => {
+    setShowOnboarding(false);
+    void AsyncStorage.setItem(ONBOARDING_DONE_KEY, 'true').catch(() => undefined);
+  };
+
+  if (!fontsLoaded || authLoading || !onboardingChecked) {
     return null;
   }
 
@@ -122,9 +148,9 @@ function RootShell() {
       <ToastProvider>
         <AnimatedSplashOverlay />
         {shouldShowOnboarding ? (
-          <Onboarding onFinish={() => setShowOnboarding(false)} />
+          <Onboarding onFinish={finishOnboarding} />
         ) : isAuthenticated ? (
-          <>
+          <NotificationsProvider>
             <AppStatusBar />
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(tabs)" />
@@ -142,7 +168,7 @@ function RootShell() {
                 canCancel={true}
               />
             )}
-          </>
+          </NotificationsProvider>
         ) : (
           renderAuthScreen()
         )}

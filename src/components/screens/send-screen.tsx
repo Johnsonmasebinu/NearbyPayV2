@@ -11,7 +11,7 @@ import {
   Share08Icon,
   ShieldCheckIcon,
   Tick02Icon,
-} from '@hugeicons/core-free-icons';
+} from '@/lib/icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import * as Clipboard from 'expo-clipboard';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -24,6 +24,7 @@ import { captureRef } from 'react-native-view-shot';
 import {
   ActivityIndicator,
   Keyboard,
+  KeyboardAvoidingView,
   Modal,
   Platform,
   ScrollView,
@@ -458,7 +459,7 @@ export function SendScreen() {
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))}>
           <HugeiconsIcon icon={ArrowLeft01Icon} size={18} color={t.textPrimary} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: t.textPrimary }]}>Send Money</Text>
+        <Text maxFontSizeMultiplier={1.3} style={[styles.headerTitle, { color: t.textPrimary }]}>Send Money</Text>
         <TouchableOpacity
           style={[styles.headerBtn, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}
           activeOpacity={0.7}
@@ -480,7 +481,7 @@ export function SendScreen() {
               select();
               setTab('nearby');
             }}>
-            <Text
+            <Text maxFontSizeMultiplier={1.3}
               style={[
                 styles.tabSegmentText,
                 tab === 'nearby' ? styles.tabSegmentTextActive : { color: t.textSecondary },
@@ -495,7 +496,7 @@ export function SendScreen() {
               select();
               setTab('bank');
             }}>
-            <Text
+            <Text maxFontSizeMultiplier={1.3}
               style={[
                 styles.tabSegmentText,
                 tab === 'bank' ? styles.tabSegmentTextActive : { color: t.textSecondary },
@@ -509,7 +510,7 @@ export function SendScreen() {
           <>
             {/* Cashtag Recipient Section */}
             <View style={styles.sectionHeaderRow}>
-              <Text style={[styles.sectionLabel, { color: t.textPrimary, marginTop: 0 }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.sectionLabel, { color: t.textPrimary, marginTop: 0 }]}>
                 Recipient Cashtag
               </Text>
               <View style={styles.scanActions}>
@@ -518,14 +519,14 @@ export function SendScreen() {
                   style={styles.qrScanPill}
                   onPress={openQrScanner}>
                   <HugeiconsIcon icon={QrCodeIcon} size={14} color={t.brand} />
-                  <Text style={[styles.qrScanPillText, { color: t.brand }]}>Read QR</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.qrScanPillText, { color: t.brand }]}>Read QR</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   activeOpacity={0.7}
                   style={styles.qrScanPill}
                   onPress={() => void openBluetoothScanner()}>
                   <HugeiconsIcon icon={BluetoothIcon} size={14} color={t.brand} />
-                  <Text style={[styles.qrScanPillText, { color: t.brand }]}>Bluetooth</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.qrScanPillText, { color: t.brand }]}>Bluetooth</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -541,22 +542,25 @@ export function SendScreen() {
                   source={{ uri: selectedNearbyUser.avatarUrl }}
                   style={styles.selectedUserAvatar}
                   contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={0}
+                  recyclingKey={selectedNearbyUser.id}
                 />
                 <View style={styles.selectedUserInfo}>
                   <View style={styles.selectedUserNameRow}>
-                    <Text style={[styles.selectedUserName, { color: t.textPrimary }]}>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.selectedUserName, { color: t.textPrimary }]}>
                       {selectedNearbyUser.name}
                     </Text>
                     <View style={styles.verifiedTag}>
                       <HugeiconsIcon icon={Tick02Icon} size={9} color="#FFFFFF" strokeWidth={3} />
                     </View>
                   </View>
-                  <Text style={[styles.selectedUserTag, { color: t.brand }]}>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.selectedUserTag, { color: t.brand }]}>
                     @{selectedNearbyUser.username}
                   </Text>
                 </View>
                 <View style={[styles.activeTagBadge, { backgroundColor: t.brandTint }]}>
-                  <Text style={[styles.activeTagBadgeText, { color: t.brand }]}>Active</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.activeTagBadgeText, { color: t.brand }]}>Active</Text>
                 </View>
               </View>
             )}
@@ -571,7 +575,7 @@ export function SendScreen() {
                 },
               ]}>
               <HugeiconsIcon icon={Search01Icon} size={18} color={t.muted} />
-              <TextInput
+              <TextInput maxFontSizeMultiplier={1.3}
                 style={[styles.searchInput, { color: t.textPrimary }]}
                 placeholder="Search @cashtag or user name..."
                 placeholderTextColor={t.muted}
@@ -613,10 +617,17 @@ export function SendScreen() {
                       setRecipientQuery('');
                       setSearchResults([]);
                     }}>
-                    <Image source={{ uri: item.avatarUrl }} style={styles.resultAvatar} />
+                    <Image
+                      source={{ uri: item.avatarUrl }}
+                      style={styles.resultAvatar}
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                      transition={0}
+                      recyclingKey={item.id}
+                    />
                     <View style={styles.resultInfo}>
-                      <Text style={[styles.resultName, { color: t.textPrimary }]}>{item.name}</Text>
-                      <Text style={[styles.resultTag, { color: t.brand }]}>@{item.username}</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.resultName, { color: t.textPrimary }]}>{item.name}</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.resultTag, { color: t.brand }]}>@{item.username}</Text>
                     </View>
                     <HugeiconsIcon icon={ArrowRight01Icon} size={16} color={t.muted} />
                   </TouchableOpacity>
@@ -625,7 +636,7 @@ export function SendScreen() {
             )}
 
             {/* Nearby/Recent People Carousel */}
-            <Text style={[styles.subLabel, { color: t.textSecondary }]}>Nearby & Recent Users</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.subLabel, { color: t.textSecondary }]}>Nearby & Recent Users</Text>
             <View style={styles.recipientsRow}>
               {nearbyUsers.slice(0, 4).map((item) => {
                 const isSelected = selectedNearbyUser?.id === item.id;
@@ -641,11 +652,18 @@ export function SendScreen() {
                     <View
                       style={[
                         styles.avatarCircle,
-                        isSelected && [styles.avatarSelected, { borderColor: t.brand }],
+                        { borderColor: isSelected ? t.brand : 'transparent' },
                       ]}>
-                      <Image source={{ uri: item.avatarUrl }} style={styles.avatarImg} />
+                      <Image
+                        source={{ uri: item.avatarUrl }}
+                        style={styles.avatarImg}
+                        contentFit="cover"
+                        cachePolicy="memory-disk"
+                        transition={0}
+                        recyclingKey={item.id}
+                      />
                     </View>
-                    <Text
+                    <Text maxFontSizeMultiplier={1.3}
                       style={[
                         styles.recipientName,
                         { color: isSelected ? t.brand : t.textPrimary },
@@ -664,14 +682,14 @@ export function SendScreen() {
                 <View style={[styles.avatarCircle, { backgroundColor: t.brandTint }]}>
                   <HugeiconsIcon icon={QrCodeIcon} size={22} color={t.brand} />
                 </View>
-                <Text style={[styles.recipientName, { color: t.brand }]}>Scan QR</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.recipientName, { color: t.brand }]}>Scan QR</Text>
               </TouchableOpacity>
             </View>
           </>
         ) : (
           <>
             {/* Bank Transfer Section */}
-            <Text style={[styles.sectionLabel, { color: t.textPrimary }]}>Bank Account</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.sectionLabel, { color: t.textPrimary }]}>Bank Account</Text>
             <View
               style={[
                 styles.searchBar,
@@ -681,7 +699,7 @@ export function SendScreen() {
                 },
               ]}>
               <HugeiconsIcon icon={Search01Icon} size={18} color={t.muted} />
-              <TextInput
+              <TextInput maxFontSizeMultiplier={1.3}
                 style={[styles.searchInput, { color: t.textPrimary }]}
                 placeholder="Enter 10-digit account number"
                 placeholderTextColor={t.muted}
@@ -694,7 +712,7 @@ export function SendScreen() {
               />
             </View>
 
-            <Text style={[styles.sectionLabel, { color: t.textPrimary }]}>Destination Bank</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.sectionLabel, { color: t.textPrimary }]}>Destination Bank</Text>
             <TouchableOpacity
               style={[styles.bankSelector, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}
               onPress={() => {
@@ -710,7 +728,7 @@ export function SendScreen() {
                 <View style={[styles.bankIconCircle, { backgroundColor: t.brandTint }]}>
                   <HugeiconsIcon icon={Building01Icon} size={18} color={t.brand} />
                 </View>
-                <Text style={[styles.bankText, { color: selectedBank ? t.textPrimary : t.muted }]}>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.bankText, { color: selectedBank ? t.textPrimary : t.muted }]}>
                   {selectedBank || 'Select Bank (e.g. Access Bank)'}
                 </Text>
               </View>
@@ -721,16 +739,16 @@ export function SendScreen() {
 
         {/* Amount Section */}
         <View style={styles.amountHeaderRow}>
-          <Text style={[styles.sectionLabel, { color: t.textPrimary, marginTop: 0 }]}>Amount</Text>
+          <Text maxFontSizeMultiplier={1.3} style={[styles.sectionLabel, { color: t.textPrimary, marginTop: 0 }]}>Amount</Text>
           <View style={styles.balanceRightRow}>
-            <Text style={[styles.availBalanceText, { color: t.textSecondary }]}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.availBalanceText, { color: t.textSecondary }]}>
               Bal: ₦{balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </Text>
             <TouchableOpacity
               style={[styles.useMaxBtn, { backgroundColor: t.brandTint }]}
               activeOpacity={0.7}
               onPress={() => setAmount(Math.floor(balance).toString())}>
-              <Text style={[styles.useMaxText, { color: t.brand }]}>MAX</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.useMaxText, { color: t.brand }]}>MAX</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -744,8 +762,8 @@ export function SendScreen() {
             },
           ]}>
           <View style={styles.amountInputRow}>
-            <Text style={[styles.nairaSymbol, { color: isOverBalance ? '#EF4444' : t.brand }]}>₦</Text>
-            <TextInput
+            <Text maxFontSizeMultiplier={1.3} style={[styles.nairaSymbol, { color: isOverBalance ? '#EF4444' : t.brand }]}>₦</Text>
+            <TextInput maxFontSizeMultiplier={1.3}
               style={[
                 styles.amountInput,
                 !hasAmount && styles.amountInputEmpty,
@@ -766,7 +784,7 @@ export function SendScreen() {
             />
           </View>
           {isOverBalance && (
-            <Text style={styles.amountErrorText}>
+            <Text maxFontSizeMultiplier={1.3} style={styles.amountErrorText}>
               Amount exceeds available balance of ₦{balance.toLocaleString('en-NG')}
             </Text>
           )}
@@ -789,7 +807,7 @@ export function SendScreen() {
                   tap();
                   setAmount(item.value);
                 }}>
-                <Text
+                <Text maxFontSizeMultiplier={1.3}
                   style={[
                     styles.quickChipText,
                     isSelected ? styles.quickChipTextActive : { color: t.textSecondary },
@@ -803,15 +821,15 @@ export function SendScreen() {
 
         {/* Add Note Section */}
         <View style={styles.noteHeader}>
-          <Text style={[styles.sectionLabel, { color: t.textPrimary, marginTop: 0 }]}>Add a note</Text>
-          <Text style={[styles.optionalLabel, { color: t.textSecondary }]}> (optional)</Text>
+          <Text maxFontSizeMultiplier={1.3} style={[styles.sectionLabel, { color: t.textPrimary, marginTop: 0 }]}>Add a note</Text>
+          <Text maxFontSizeMultiplier={1.3} style={[styles.optionalLabel, { color: t.textSecondary }]}> (optional)</Text>
         </View>
         <View
           style={[
             styles.noteCard,
             { backgroundColor: t.cardBg, borderColor: focused === 'note' ? t.brand : t.cardBorder },
           ]}>
-          <TextInput
+          <TextInput maxFontSizeMultiplier={1.3}
             style={[styles.noteInput, { color: t.textPrimary }]}
             placeholder="e.g. Lunch money, Hackathon split"
             placeholderTextColor={t.muted}
@@ -825,7 +843,7 @@ export function SendScreen() {
             onBlur={() => setFocused(null)}
             accessibilityLabel="Transfer note, optional"
           />
-          <Text style={[styles.charCounter, { color: t.muted }]}>{note.length}/50</Text>
+          <Text maxFontSizeMultiplier={1.3} style={[styles.charCounter, { color: t.muted }]}>{note.length}/50</Text>
         </View>
 
         {/* Security Banner */}
@@ -838,10 +856,10 @@ export function SendScreen() {
             <HugeiconsIcon icon={ShieldCheckIcon} size={20} color={t.brand} />
           </View>
           <View style={styles.securityTextWrap}>
-            <Text style={[styles.securityTitle, { color: t.textPrimary }]}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.securityTitle, { color: t.textPrimary }]}>
               Instant &amp; Real-time Settlement
             </Text>
-            <Text style={[styles.securitySub, { color: t.textSecondary }]}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.securitySub, { color: t.textSecondary }]}>
               {tab === 'nearby'
                 ? 'Directly debited and credited to recipient Cashtag instantly.'
                 : 'Protected with bank-grade encryption and PIN authorization.'}
@@ -872,7 +890,7 @@ export function SendScreen() {
             </Defs>
             <Rect width="100%" height="100%" rx={18} fill="url(#sendCtaGrad)" />
           </Svg>
-          <Text style={styles.submitBtnText}>
+          <Text maxFontSizeMultiplier={1.3} style={styles.submitBtnText}>
             {hasAmount
               ? `Send ₦${formattedAmount()}`
               : 'Enter Amount to Send'}
@@ -911,10 +929,10 @@ export function SendScreen() {
                 <HugeiconsIcon icon={QrCodeIcon} size={22} color={t.brand} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.qrSheetTitle, { color: t.textPrimary }]}>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.qrSheetTitle, { color: t.textPrimary }]}>
                   Scan payment QR
                 </Text>
-                <Text style={[styles.qrSheetSubtitle, { color: t.textSecondary }]}>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.qrSheetSubtitle, { color: t.textSecondary }]}>
                   The receiver can be offline; you need internet to pay
                 </Text>
               </View>
@@ -939,7 +957,7 @@ export function SendScreen() {
                 />
               ) : (
                 <View style={styles.cameraPermissionPrompt}>
-                  <Text style={[styles.cameraPermissionText, { color: t.textSecondary }]}>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.cameraPermissionText, { color: t.textSecondary }]}>
                     {cameraPermission ? 'Camera access is needed to scan a payment QR.' : 'Starting camera...'}
                   </Text>
                   {cameraPermission && (
@@ -947,19 +965,19 @@ export function SendScreen() {
                       style={[styles.qrApplyBtn, { backgroundColor: t.brand }]}
                       activeOpacity={0.85}
                       onPress={() => void requestCameraPermission()}>
-                      <Text style={styles.qrApplyBtnText}>Enable camera</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={styles.qrApplyBtnText}>Enable camera</Text>
                     </TouchableOpacity>
                   )}
                 </View>
               )}
             </View>
 
-            <View
+            {/* <View
               style={[
                 styles.qrInputBox,
                 { backgroundColor: t.inputBg, borderColor: t.inputBorder },
               ]}>
-              <TextInput
+              <TextInput maxFontSizeMultiplier={1.3}
                 style={[styles.qrTextInput, { color: t.textPrimary }]}
                 placeholder="e.g. nearbypay://pay?tag=johnsonmas81 or @tag"
                 placeholderTextColor={t.muted}
@@ -971,12 +989,12 @@ export function SendScreen() {
                 style={[styles.qrApplyBtn, { backgroundColor: t.brand }]}
                 activeOpacity={0.85}
                 onPress={() => handleApplyQr(qrInput)}>
-                <Text style={styles.qrApplyBtnText}>Apply</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.qrApplyBtnText}>Apply</Text>
               </TouchableOpacity>
-            </View>
+            </View> */}
 
             {/* Quick Discover Nearby Users */}
-            <Text style={[styles.qrSheetSectionTitle, { color: t.textPrimary }]}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.qrSheetSectionTitle, { color: t.textPrimary }]}>
               Discovered Nearby Users
             </Text>
             <View style={styles.discoveredList}>
@@ -996,17 +1014,24 @@ export function SendScreen() {
                     setQrModalVisible(false);
                     show({ message: `Selected @${item.username}`, variant: 'success' });
                   }}>
-                  <Image source={{ uri: item.avatarUrl }} style={styles.discoveredAvatar} />
+                  <Image
+                    source={{ uri: item.avatarUrl }}
+                    style={styles.discoveredAvatar}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={0}
+                    recyclingKey={item.id}
+                  />
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.discoveredName, { color: t.textPrimary }]}>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.discoveredName, { color: t.textPrimary }]}>
                       {item.name}
                     </Text>
-                    <Text style={[styles.discoveredTag, { color: t.brand }]}>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.discoveredTag, { color: t.brand }]}>
                       @{item.username}
                     </Text>
                   </View>
                   <View style={[styles.tagBadgeSmall, { backgroundColor: t.brandTint }]}>
-                    <Text style={[styles.tagBadgeSmallText, { color: t.brand }]}>Select</Text>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.tagBadgeSmallText, { color: t.brand }]}>Select</Text>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -1033,8 +1058,8 @@ export function SendScreen() {
                 <HugeiconsIcon icon={BluetoothIcon} size={22} color={t.brand} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.qrSheetTitle, { color: t.textPrimary }]}>Nearby receivers</Text>
-                <Text style={[styles.qrSheetSubtitle, { color: t.textSecondary }]}>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.qrSheetTitle, { color: t.textPrimary }]}>Nearby receivers</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.qrSheetSubtitle, { color: t.textSecondary }]}>
                   Keep the receiver app open with Nearby Discovery on.
                 </Text>
               </View>
@@ -1060,22 +1085,22 @@ export function SendScreen() {
                       <HugeiconsIcon icon={BluetoothIcon} size={17} color={t.brand} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.discoveredName, { color: t.textPrimary }]}>{device.name}</Text>
-                      <Text style={[styles.discoveredTag, { color: t.brand }]}>@{device.tag}</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.discoveredName, { color: t.textPrimary }]}>{device.name}</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={[styles.discoveredTag, { color: t.brand }]}>@{device.tag}</Text>
                     </View>
-                    <Text style={[styles.bluetoothSignal, { color: t.textSecondary }]}>{device.rssi} dBm</Text>
+                    <Text maxFontSizeMultiplier={1.3} style={[styles.bluetoothSignal, { color: t.textSecondary }]}>{device.rssi} dBm</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             ) : nearbyBluetooth.isScanning ? (
               <View style={styles.bluetoothEmptyState}>
                 <ActivityIndicator color={t.brand} />
-                <Text style={[styles.cameraPermissionText, { color: t.textSecondary }]}>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.cameraPermissionText, { color: t.textSecondary }]}>
                   Scanning for NearbyPay receivers...
                 </Text>
               </View>
             ) : (
-              <Text style={[styles.bluetoothEmptyText, { color: t.textSecondary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.bluetoothEmptyText, { color: t.textSecondary }]}>
                 {nearbyBluetooth.status?.message || 'No receivers found nearby.'}
               </Text>
             )}
@@ -1084,7 +1109,7 @@ export function SendScreen() {
               style={[styles.contactlessContinueButton, { backgroundColor: t.chipBg }]}
               activeOpacity={0.85}
               onPress={closeBluetoothScanner}>
-              <Text style={[styles.qrApplyBtnText, { color: t.textPrimary }]}>Close scan</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.qrApplyBtnText, { color: t.textPrimary }]}>Close scan</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1094,33 +1119,47 @@ export function SendScreen() {
         visible={contactlessCodeModalVisible}
         transparent
         animationType="slide"
+        statusBarTranslucent
         onRequestClose={() => setContactlessCodeModalVisible(false)}>
-        <View style={styles.modalBackdrop}>
+        <KeyboardAvoidingView
+          style={styles.modalBackdrop}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+          keyboardVerticalOffset={0}>
           <TouchableOpacity
             style={styles.backdropTouch}
             activeOpacity={1}
-            onPress={() => setContactlessCodeModalVisible(false)}
+            onPress={() => {
+              Keyboard.dismiss();
+              setContactlessCodeModalVisible(false);
+            }}
           />
-          <View style={[styles.qrSheet, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
+          <View
+            style={[
+              styles.qrSheet,
+              { backgroundColor: t.cardBg, borderColor: t.cardBorder },
+            ]}>
             <View style={[styles.sheetHandle, { backgroundColor: t.divider }]} />
             <View style={styles.qrSheetHeader}>
               <View style={[styles.qrHeaderIconWrap, { backgroundColor: t.brandTint }]}>
                 <HugeiconsIcon icon={ShieldCheckIcon} size={22} color={t.brand} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.qrSheetTitle, { color: t.textPrimary }]}>Recipient contactless code</Text>
-                <Text style={[styles.qrSheetSubtitle, { color: t.textSecondary }]}>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.qrSheetTitle, { color: t.textPrimary }]}>Recipient contactless code</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.qrSheetSubtitle, { color: t.textSecondary }]}>
                   Ask @{selectedNearbyUser?.username || 'recipient'} for their 8-digit code. It is not in the QR.
                 </Text>
               </View>
               <TouchableOpacity
                 style={[styles.closeIconBtn, { backgroundColor: t.chipBg }]}
-                onPress={() => setContactlessCodeModalVisible(false)}>
+                onPress={() => {
+                  Keyboard.dismiss();
+                  setContactlessCodeModalVisible(false);
+                }}>
                 <HugeiconsIcon icon={Cancel01Icon} size={16} color={t.textPrimary} />
               </TouchableOpacity>
             </View>
 
-            <TextInput
+            <TextInput maxFontSizeMultiplier={1.3}
               style={[styles.contactlessCodeInput, { backgroundColor: t.inputBg, borderColor: t.inputBorder, color: t.textPrimary }]}
               placeholder="8-digit code"
               placeholderTextColor={t.muted}
@@ -1134,7 +1173,7 @@ export function SendScreen() {
               maxLength={8}
               accessibilityLabel="Recipient's 8-digit contactless code"
             />
-            {contactlessCodeError ? <Text style={styles.contactlessCodeError}>{contactlessCodeError}</Text> : null}
+            {contactlessCodeError ? <Text maxFontSizeMultiplier={1.3} style={styles.contactlessCodeError}>{contactlessCodeError}</Text> : null}
 
             <TouchableOpacity
               style={[styles.contactlessContinueButton, { backgroundColor: t.brand }]}
@@ -1145,12 +1184,13 @@ export function SendScreen() {
                   return;
                 }
                 setContactlessCodeError('');
+                Keyboard.dismiss();
                 setContactlessCodeModalVisible(false);
               }}>
-              <Text style={styles.qrApplyBtnText}>Continue</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.qrApplyBtnText}>Continue</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Live Transfer Receipt Modal */}
@@ -1158,45 +1198,45 @@ export function SendScreen() {
         <View style={styles.receiptBackdrop}>
           <View style={[styles.receiptCard, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
             <View ref={receiptArtworkRef} style={[styles.receiptArtwork, { backgroundColor: t.cardBg }]}>
-              <Text style={[styles.receiptBrand, { color: t.brand }]}>NearbyPay</Text>
-              <Text style={[styles.receiptType, { color: t.textSecondary }]}>TRANSACTION RECEIPT</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.receiptBrand, { color: t.brand }]}>NearbyPay</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.receiptType, { color: t.textSecondary }]}>TRANSACTION RECEIPT</Text>
             {/* Green glowing success badge */}
             <View style={styles.successIconCircle}>
               <HugeiconsIcon icon={CheckmarkCircle02Icon} size={54} color="#16A34A" />
             </View>
 
-            <Text style={[styles.receiptSuccessTitle, { color: t.textPrimary }]}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.receiptSuccessTitle, { color: t.textPrimary }]}>
               Transfer Successful!
             </Text>
-            <Text style={[styles.receiptSuccessSub, { color: t.textSecondary }]}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.receiptSuccessSub, { color: t.textSecondary }]}>
               Funds have been transferred instantly
             </Text>
 
-            <Text style={[styles.receiptBigAmount, { color: t.textPrimary }]}>
+            <Text maxFontSizeMultiplier={1.3} adjustsFontSizeToFit numberOfLines={1} style={[styles.receiptBigAmount, { color: t.textPrimary }]}>
               ₦{receipt?.amount.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </Text>
 
             {/* Details Box */}
             <View style={[styles.receiptDetailsBox, { backgroundColor: t.chipBg, borderColor: t.cardBorder }]}>
               <View style={styles.receiptRow}>
-                <Text style={[styles.receiptLabel, { color: t.textSecondary }]}>Recipient</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.receiptLabel, { color: t.textSecondary }]}>Recipient</Text>
                 <View style={styles.receiptRecipientCol}>
-                  <Text style={[styles.receiptValue, { color: t.textPrimary }]}>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.receiptValue, { color: t.textPrimary }]}>
                     {receipt?.recipientName}
                   </Text>
-                  <Text style={[styles.receiptSubValue, { color: t.brand }]}>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.receiptSubValue, { color: t.brand }]}>
                     @{receipt?.recipientTag}
                   </Text>
                 </View>
               </View>
 
               <View style={styles.receiptRow}>
-                <Text style={[styles.receiptLabel, { color: t.textSecondary }]}>Reference</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.receiptLabel, { color: t.textSecondary }]}>Reference</Text>
                 <TouchableOpacity
                   style={styles.refRow}
                   activeOpacity={0.7}
                   onPress={() => receipt && copyReceiptRef(receipt.reference)}>
-                  <Text style={[styles.receiptValue, { color: t.textPrimary, fontFamily: 'Montserrat_600SemiBold' }]}>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.receiptValue, { color: t.textPrimary, fontFamily: 'Montserrat_600SemiBold' }]}>
                     {receipt?.reference}
                   </Text>
                   <HugeiconsIcon icon={Copy01Icon} size={14} color={t.brand} />
@@ -1204,23 +1244,23 @@ export function SendScreen() {
               </View>
 
               <View style={styles.receiptRow}>
-                <Text style={[styles.receiptLabel, { color: t.textSecondary }]}>Channel</Text>
-                <Text style={[styles.receiptValue, { color: t.textPrimary }]}>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.receiptLabel, { color: t.textSecondary }]}>Channel</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.receiptValue, { color: t.textPrimary }]}>
                   {receipt?.channel}
                 </Text>
               </View>
 
               <View style={styles.receiptRow}>
-                <Text style={[styles.receiptLabel, { color: t.textSecondary }]}>Date &amp; Time</Text>
-                <Text style={[styles.receiptValue, { color: t.textPrimary }]}>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.receiptLabel, { color: t.textSecondary }]}>Date &amp; Time</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.receiptValue, { color: t.textPrimary }]}>
                   {receipt?.date}
                 </Text>
               </View>
 
               {receipt?.note && (
                 <View style={styles.receiptRow}>
-                  <Text style={[styles.receiptLabel, { color: t.textSecondary }]}>Note</Text>
-                  <Text style={[styles.receiptValue, { color: t.textPrimary }]}>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.receiptLabel, { color: t.textSecondary }]}>Note</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.receiptValue, { color: t.textPrimary }]}>
                     {receipt.note}
                   </Text>
                 </View>
@@ -1235,14 +1275,14 @@ export function SendScreen() {
                 activeOpacity={0.8}
                 onPress={shareReceipt}>
                 <HugeiconsIcon icon={Share08Icon} size={16} color={t.textPrimary} />
-                <Text style={[styles.receiptShareBtnText, { color: t.textPrimary }]}>Share</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.receiptShareBtnText, { color: t.textPrimary }]}>Share</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.receiptDoneBtn, { backgroundColor: t.brand }]}
                 activeOpacity={0.85}
                 onPress={handleDoneReceipt}>
-                <Text style={styles.receiptDoneBtnText}>Done</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.receiptDoneBtnText}>Done</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1454,19 +1494,23 @@ const styles = StyleSheet.create({
     maxWidth: 68,
   },
   avatarCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 2.5,
+    borderColor: 'transparent',
+    backgroundColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
   avatarSelected: {
-    borderWidth: 2.5,
+    borderColor: '#2E45F4',
   },
   avatarImg: {
-    width: '100%',
-    height: '100%',
+    width: 51,
+    height: 51,
+    borderRadius: 25.5,
   },
   recipientName: {
     fontFamily: 'Montserrat_600SemiBold',
@@ -1741,6 +1785,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 14,
     paddingHorizontal: 16,
+    marginBottom: 14,
     textAlign: 'center',
     fontFamily: 'Montserrat_700Bold',
     fontSize: 20,

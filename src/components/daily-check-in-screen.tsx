@@ -9,7 +9,7 @@ import {
   RotateRight01Icon,
   SparklesIcon,
   Tick02Icon,
-} from '@hugeicons/core-free-icons';
+} from '@/lib/icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -243,8 +243,8 @@ export default function DailyCheckInScreen() {
             <HugeiconsIcon icon={ArrowLeft01Icon} size={19} color={t.textPrimary} />
           </TouchableOpacity>
           <View style={styles.headerTitleWrap}>
-            <Text style={[styles.eyebrow, { color: t.brand }]}>DAILY MYSTERY REWARDS</Text>
-            <Text style={[styles.title, { color: t.textPrimary }]}>Daily Check-In</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.eyebrow, { color: t.brand }]}>DAILY MYSTERY REWARDS</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.title, { color: t.textPrimary }]}>Daily Check-In</Text>
           </View>
           <View style={[styles.weekIcon, { backgroundColor: t.brandTint }]}>
             <HugeiconsIcon icon={Calendar03Icon} size={19} color={t.brand} />
@@ -280,18 +280,18 @@ export default function DailyCheckInScreen() {
               <View style={styles.heroIcon}>
                 <HugeiconsIcon icon={SparklesIcon} size={22} color="#FFFFFF" />
               </View>
-              <Text style={styles.heroKicker}>{weekStart ? `Week of ${weekStart}` : 'Monday — Sunday Cycle'}</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.heroKicker}>{weekStart ? `Week of ${weekStart}` : 'Monday — Sunday Cycle'}</Text>
             </View>
 
-            <Text style={styles.heroTitle}>Spin each day to unlock rewards.</Text>
-            <Text style={styles.heroCopy}>
+            <Text maxFontSizeMultiplier={1.3} style={styles.heroTitle}>Spin each day to unlock rewards.</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.heroCopy}>
               Check-in is always by spinning! Prize figures remain hidden until you spin to reveal them.
             </Text>
 
             <View style={styles.progressTrack}>
               <View style={[styles.progressFill, { width: `${Math.round((completedCount / 7) * 100)}%` }]} />
             </View>
-            <Text style={styles.progressText}>{completedCount} of 7 days completed</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.progressText}>{completedCount} of 7 days completed</Text>
           </View>
 
           {/* Today's Active Mystery Spin Card if Available */}
@@ -301,9 +301,9 @@ export default function DailyCheckInScreen() {
                 <HugeiconsIcon icon={Clock01Icon} size={20} color={t.brand} />
               </View>
               <View style={styles.todayCopy}>
-                <Text style={[styles.todayEyebrow, { color: t.brand }]}>TODAY&apos;S CHECK-IN</Text>
-                <Text style={[styles.todayTitle, { color: t.textPrimary }]}>{availableDay.dayName}</Text>
-                <Text style={[styles.todayReward, { color: t.textSecondary }]}>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.todayEyebrow, { color: t.brand }]}>TODAY&apos;S CHECK-IN</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.todayTitle, { color: t.textPrimary }]}>{availableDay.dayName}</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.todayReward, { color: t.textSecondary }]}>
                   Mystery Cash Reward • Spin to Reveal
                 </Text>
               </View>
@@ -317,7 +317,7 @@ export default function DailyCheckInScreen() {
                 ) : (
                   <View style={styles.rowBtnInner}>
                     <HugeiconsIcon icon={RotateRight01Icon} size={13} color="#FFFFFF" strokeWidth={2.4} />
-                    <Text style={styles.checkButtonText}>Spin</Text>
+                    <Text maxFontSizeMultiplier={1.3} style={styles.checkButtonText}>Spin</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -327,19 +327,19 @@ export default function DailyCheckInScreen() {
           {/* Weekly Streak Schedule & Mystery Statuses */}
           <View style={styles.sectionHeading}>
             <View>
-              <Text style={[styles.sectionTitle, { color: t.textPrimary }]}>Weekly Reward Schedule</Text>
-              <Text style={[styles.sectionSubtitle, { color: t.textSecondary }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.sectionTitle, { color: t.textPrimary }]}>Weekly Reward Schedule</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.sectionSubtitle, { color: t.textSecondary }]}>
                 Monday through Sunday • Figures unlocked upon spin
               </Text>
             </View>
-            <Text style={[styles.countLabel, { color: t.brand }]}>{completedCount}/7</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.countLabel, { color: t.brand }]}>{completedCount}/7</Text>
           </View>
 
           <View style={[styles.daysCard, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
             {isLoading ? (
               <View style={styles.loadingState}>
                 <ActivityIndicator color={t.brand} />
-                <Text style={[styles.loadingText, { color: t.textSecondary }]}>Loading weekly rewards...</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.loadingText, { color: t.textSecondary }]}>Loading weekly rewards...</Text>
               </View>
             ) : (
               days.map((day, index) => (
@@ -355,7 +355,7 @@ export default function DailyCheckInScreen() {
             )}
           </View>
 
-          <Text style={[styles.footnote, { color: t.muted }]}>
+          <Text maxFontSizeMultiplier={1.3} style={[styles.footnote, { color: t.muted }]}>
             Rewards are credited immediately to your live transaction balance after check-in.
           </Text>
         </ScrollView>
@@ -371,13 +371,13 @@ export default function DailyCheckInScreen() {
           <View style={[styles.spinCard, { backgroundColor: t.cardBg, borderColor: t.cardBorder }]}>
             <View style={[styles.spinHeaderBadge, { backgroundColor: t.brandTint }]}>
               <HugeiconsIcon icon={GiftIcon} size={13} color={t.brand} />
-              <Text style={[styles.spinBadgeText, { color: t.brand }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.spinBadgeText, { color: t.brand }]}>
                 {activeSpinDay?.dayName.toUpperCase()} LUCKY SPIN
               </Text>
             </View>
 
-            <Text style={[styles.spinTitle, { color: t.textPrimary }]}>Spin to Unlock Cash Prize</Text>
-            <Text style={[styles.spinSubtitle, { color: t.textSecondary }]}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.spinTitle, { color: t.textPrimary }]}>Spin to Unlock Cash Prize</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.spinSubtitle, { color: t.textSecondary }]}>
               Figures are only revealed on the wheel. Spin now to see what you win!
             </Text>
 
@@ -393,12 +393,12 @@ export default function DailyCheckInScreen() {
               {spinOptions[highlightedIndex]?.isTryAgain ? (
                 <View style={styles.tryAgainReelWrap}>
                   <HugeiconsIcon icon={CircleArrowReload01Icon} size={30} color="#F59E0B" strokeWidth={2.4} />
-                  <Text style={styles.tryAgainReelText}>Try Again</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={styles.tryAgainReelText}>Try Again</Text>
                 </View>
               ) : (
                 <View style={styles.cashReelWrap}>
-                  <Text style={styles.spinCurrency}>₦</Text>
-                  <Text style={[styles.spinValueNumber, { color: t.brand }]}>
+                  <Text maxFontSizeMultiplier={1.3} style={styles.spinCurrency}>₦</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.spinValueNumber, { color: t.brand }]}>
                     {spinOptions[highlightedIndex]?.amount ?? '???'}
                   </Text>
                 </View>
@@ -406,7 +406,7 @@ export default function DailyCheckInScreen() {
             </View>
 
             {/* Options Strip Preview */}
-            <Text style={[styles.optionsLabel, { color: t.textSecondary }]}>Available Outcomes Today:</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.optionsLabel, { color: t.textSecondary }]}>Available Outcomes Today:</Text>
             <View style={styles.spinPillsRow}>
               {spinOptions.map((opt, idx) => {
                 const isSelected = highlightedIndex === idx;
@@ -428,7 +428,7 @@ export default function DailyCheckInScreen() {
                           : t.cardBorder,
                       },
                     ]}>
-                    <Text
+                    <Text maxFontSizeMultiplier={1.3}
                       style={[
                         styles.spinPillText,
                         {
@@ -450,7 +450,7 @@ export default function DailyCheckInScreen() {
             {landedTryAgain && (
               <View style={styles.tryAgainBanner}>
                 <HugeiconsIcon icon={CircleArrowReload01Icon} size={15} color="#D97706" strokeWidth={2.2} />
-                <Text style={styles.tryAgainBannerText}>
+                <Text maxFontSizeMultiplier={1.3} style={styles.tryAgainBannerText}>
                   Almost had it! You got &quot;Try Again&quot;. Spin once more!
                 </Text>
               </View>
@@ -465,12 +465,12 @@ export default function DailyCheckInScreen() {
               {isSpinning ? (
                 <View style={styles.spinBtnContent}>
                   <ActivityIndicator color="#FFFFFF" size="small" />
-                  <Text style={styles.spinActionBtnText}>Spinning...</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={styles.spinActionBtnText}>Spinning...</Text>
                 </View>
               ) : (
                 <View style={styles.spinBtnContent}>
                   <HugeiconsIcon icon={RotateRight01Icon} size={16} color="#FFFFFF" strokeWidth={2.2} />
-                  <Text style={styles.spinActionBtnText}>
+                  <Text maxFontSizeMultiplier={1.3} style={styles.spinActionBtnText}>
                     {landedTryAgain ? 'Spin Again' : 'Spin to Reveal'}
                   </Text>
                 </View>
@@ -482,7 +482,7 @@ export default function DailyCheckInScreen() {
                 style={styles.spinCloseBtn}
                 onPress={() => setActiveSpinDay(null)}
                 activeOpacity={0.7}>
-                <Text style={[styles.spinCloseText, { color: t.muted }]}>Cancel</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.spinCloseText, { color: t.muted }]}>Cancel</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -502,20 +502,20 @@ export default function DailyCheckInScreen() {
             <View style={[styles.rewardIcon, { backgroundColor: t.successTint }]}>
               <HugeiconsIcon icon={CheckmarkCircle02Icon} size={42} color={t.success} />
             </View>
-            <Text style={[styles.rewardEyebrow, { color: t.success }]}>CHECK-IN COMPLETE</Text>
-            <Text style={[styles.rewardTitle, { color: t.textPrimary }]}>You won</Text>
-            <Text style={[styles.rewardAmount, { color: t.brand }]}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.rewardEyebrow, { color: t.success }]}>CHECK-IN COMPLETE</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.rewardTitle, { color: t.textPrimary }]}>You won</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.rewardAmount, { color: t.brand }]}>
               ₦{rewardSplash?.amount.toLocaleString('en-NG')}
             </Text>
-            <Text style={[styles.rewardSubtitle, { color: t.textSecondary }]}>{rewardSplash?.reward}</Text>
-            <Text style={[styles.rewardNote, { color: t.muted }]}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.rewardSubtitle, { color: t.textSecondary }]}>{rewardSplash?.reward}</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.rewardNote, { color: t.muted }]}>
               Your reward has been credited to your transaction balance.
             </Text>
             <TouchableOpacity
               style={[styles.rewardButton, { backgroundColor: t.brand }]}
               onPress={() => setRewardSplash(null)}
               activeOpacity={0.84}>
-              <Text style={styles.rewardButtonText}>Awesome, Continue</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.rewardButtonText}>Awesome, Continue</Text>
             </TouchableOpacity>
           </Animated.View>
         </Animated.View>
@@ -564,7 +564,7 @@ function DayRow({
         {isCompleted ? (
           <HugeiconsIcon icon={Tick02Icon} size={18} color={t.success} />
         ) : (
-          <Text
+          <Text maxFontSizeMultiplier={1.3}
             style={[
               styles.dayInitial,
               {
@@ -585,14 +585,14 @@ function DayRow({
       {/* Info: Day name & Mystery or Won amount */}
       <View style={styles.dayInfo}>
         <View style={styles.dayNameRow}>
-          <Text style={[styles.dayName, { color: t.textPrimary }]}>{day.dayName}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={[styles.dayName, { color: t.textPrimary }]}>{day.dayName}</Text>
           {isAvailable && (
             <View style={[styles.todayBadge, { backgroundColor: t.brandTint }]}>
-              <Text style={[styles.todayBadgeText, { color: t.brand }]}>TODAY</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.todayBadgeText, { color: t.brand }]}>TODAY</Text>
             </View>
           )}
         </View>
-        <Text style={[styles.dayReward, { color: isCompleted ? t.success : t.textSecondary }]}>
+        <Text maxFontSizeMultiplier={1.3} style={[styles.dayReward, { color: isCompleted ? t.success : t.textSecondary }]}>
           {isCompleted ? day.reward : 'Mystery Reward • Spin to Reveal'}
         </Text>
       </View>
@@ -610,23 +610,23 @@ function DayRow({
             ) : (
               <View style={styles.rowBtnInner}>
                 <HugeiconsIcon icon={RotateRight01Icon} size={12} color="#FFFFFF" strokeWidth={2.4} />
-                <Text style={styles.rowCheckInBtnText}>Spin</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.rowCheckInBtnText}>Spin</Text>
               </View>
             )}
           </TouchableOpacity>
         ) : isCompleted ? (
           <View style={[styles.statusPill, { backgroundColor: t.successTint }]}>
             <HugeiconsIcon icon={Tick02Icon} size={12} color={t.success} />
-            <Text style={[styles.statusPillText, { color: t.success }]}>Completed</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.statusPillText, { color: t.success }]}>Completed</Text>
           </View>
         ) : isMissed ? (
           <View style={[styles.statusPill, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}>
-            <Text style={[styles.statusPillText, { color: '#EF4444' }]}>Missed</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.statusPillText, { color: '#EF4444' }]}>Missed</Text>
           </View>
         ) : (
           <View style={[styles.statusPill, { backgroundColor: t.chipBg }]}>
             <HugeiconsIcon icon={CircleLock01Icon} size={11} color={t.muted} />
-            <Text style={[styles.statusPillText, { color: t.muted }]}>Locked</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.statusPillText, { color: t.muted }]}>Locked</Text>
           </View>
         )}
       </View>

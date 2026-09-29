@@ -4,7 +4,7 @@ import {
     Home01Icon,
     Sent02Icon,
     UserIcon,
-} from '@hugeicons/core-free-icons';
+} from '@/lib/icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -58,7 +58,7 @@ export function BottomTabs({ active, onPress }: BottomTabsProps) {
             strokeWidth={isActive ? 2.4 : 1.8}
           />
         </View>
-        <Text style={[styles.navLabel, { color: t.iconColor }, isActive && { color: t.textPrimary }]}>
+        <Text maxFontSizeMultiplier={1.3} style={[styles.navLabel, { color: t.iconColor }, isActive && { color: t.textPrimary }]}>
           {label}
         </Text>
       </TouchableOpacity>
