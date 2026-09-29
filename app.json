@@ -80,15 +80,5 @@
         "projectId": "50945595-fecf-4a64-9d3a-8cf7542f8b94"
       }
     }
-  },
-  "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal"
-    },
-    "preview": {
-      "distribution": "internal"
-    },
-    "production": {}
   }
 }
